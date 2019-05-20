@@ -1,0 +1,190 @@
+buildscript {
+    repositories {
+        maven { url "https://maven.aliyun.com/repository/public" }
+        jcenter()
+    }
+    // gRPC, ProtoBuf
+    dependencies {
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.8'
+    }
+}
+
+plugins {
+    id 'java'
+    id 'maven'
+    id 'idea'
+    id 'maven-publish'
+    id "com.jfrog.bintray" version "1.8.1"
+    // gRPC, ProtoBuf
+    id "com.google.protobuf" version "0.8.8"
+}
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+
+repositories {
+    maven { url "https://maven.aliyun.com/repository/central" }
+    maven { url "https://maven.aliyun.com/repository/jcenter" }
+    jcenter()
+}
+
+
+group 'net.nextabc'
+version '1.0.0'
+description = 'Edge X for java'
+
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.slf4j:slf4j-api:1.7.21'
+    compile 'org.slf4j:slf4j-log4j12:1.7.5'
+    // MQTT
+    compile 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.1'
+    // gRPC, ProtoBuf
+    compile 'io.grpc:grpc-netty-shaded:1.20.0'
+    compile 'io.grpc:grpc-protobuf:1.20.0'
+    compile 'io.grpc:grpc-stub:1.20.0'
+    compile 'com.google.protobuf:protobuf-java:3.7.1'
+    testCompile 'junit:junit:4.12'
+}
+
+// gRPC, ProtoBuf
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.7.1"
+    }
+    plugins {
+        grpc {
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.20.0'
+        }
+    }
+    generateProtoTasks {
+        ofSourceSet('main')*.plugins {
+            // Apply the "grpc" plugin whose spec is defined above, without
+            // options.  Note the braces cannot be omitted, otherwise the
+            // plugin will not be added. This is because of the implicit way
+            // NamedDomainObjectContainer binds the methods.
+            grpc { }
+        }
+    }
+}
+
+ext {
+    projectGroupId = project.group
+    projectVersion = project.version
+    projectName = rootProject.name
+    projectDesc = description
+    projectURL = "https://github.com/nextabc-lab/edgex-java"
+    projectVCS = "https://github.com/nextabc-lab/edgex-java.git"
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+javadoc {
+    options {
+        encoding "UTF-8"
+        charSet 'UTF-8'
+        author true
+        version true
+        links "http://docs.oracle.com/javase/8/docs/api"
+        title projectName
+    }
+}
+
+artifacts {
+    archives sourcesJar, javadocJar
+}
+
+bintray {
+    user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
+    key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
+
+    publications = ['mavenJava']
+    configurations = ['archives']
+
+    dryRun = false
+    publish = true
+
+    pkg {
+        repo = 'maven'
+        name = projectName
+        userOrg = 'yoojia'
+
+        licenses = ['Apache-2.0']
+        vcsUrl = projectVCS
+        labels = ['java', 'EdgeX']
+
+        publicDownloadNumbers = true
+
+        version {
+            name = projectVersion
+            desc = projectDesc
+            vcsTag = projectVersion
+            attributes = ['gradle-plugin': 'com.use.less:com.use.less.gradle:gradle-useless-plugin']
+        }
+    }
+}
+
+def pomConfig = {
+
+    name projectName
+    url projectURL
+    inceptionYear '2018'
+
+    licenses {
+        license {
+            name "The Apache Software License, Version 2.0"
+            url "http://www.apache.org/licenses/LICENSE-2.0.txt"
+            distribution "repo"
+        }
+    }
+
+    developers {
+        developer {
+            id "yoojia"
+            name "yoojia chen"
+            email "yoojiachen@gmail.com"
+        }
+    }
+
+    scm {
+        url projectVCS
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            groupId projectGroupId
+            artifactId projectName
+            version projectVersion
+
+            artifact sourcesJar
+            artifact javadocJar
+
+            pom.withXml {
+                def root = asNode()
+                root.appendNode('description', projectDesc)
+                root.children().last() + pomConfig
+            }
+        }
+    }
+}
