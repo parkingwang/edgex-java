@@ -30,4 +30,18 @@ public class GlobalScoped {
         this.mqttConnectTimeout = connectTimeout;
         this.mqttReconnectInterval = reconnectInterval;
     }
+
+    public static GlobalScoped getDefault(String broker) {
+        return new GlobalScoped(
+                broker,
+                2,
+                false,
+                true,
+                true,
+                3,
+                3,
+                5,
+                3
+        );
+    }
 }
