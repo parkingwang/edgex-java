@@ -47,6 +47,7 @@ final class DriverImpl implements Driver {
 
     @Override
     public Message execute(String endpointAddress, Message in, int timeoutSec) throws Exception {
+        log.debug("GRPC调用Endpoint: " + endpointAddress);
         final URI uri = URI.create(endpointAddress);
         final ManagedChannel ch = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
                 .usePlaintext()

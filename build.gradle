@@ -42,6 +42,8 @@ repositories {
 dependencies {
     compile 'org.slf4j:slf4j-api:1.7.21'
     compile 'org.slf4j:slf4j-log4j12:1.7.5'
+    // TOML
+    compile 'com.moandjiezana.toml:toml4j:0.7.2'
     // MQTT
     compile 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.1'
     // gRPC, ProtoBuf

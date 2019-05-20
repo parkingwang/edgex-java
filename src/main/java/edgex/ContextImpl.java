@@ -1,10 +1,14 @@
 package edgex;
 
+import com.moandjiezana.toml.Toml;
 import org.apache.log4j.Logger;
 
+import java.io.File;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 
 /**
  * Context Impl
@@ -25,7 +29,18 @@ final class ContextImpl implements Context {
 
     @Override
     public Map<String, Object> loadConfig() {
-        return null;
+        final File file = Stream.of(DEFAULT_CONF_NAME, DEFAULT_CONF_FILE, System.getenv(APP_CONF_ENV_KEY))
+                .map(File::new)
+                .filter(File::exists)
+                .findFirst()
+                .orElse(null);
+        if (null == file) {
+            log.fatal("未设置任何文件");
+            return Collections.emptyMap();
+        } else {
+            log.info("加载配置文件：" + file);
+            return new Toml().read(file).toMap();
+        }
     }
 
     @Override
@@ -52,4 +67,6 @@ final class ContextImpl implements Context {
             log.fatal(message);
         }
     }
+
+
 }
