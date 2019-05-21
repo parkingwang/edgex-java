@@ -75,7 +75,15 @@ public interface Message {
 
         @Override
         public byte[] bytes() {
-            return head;
+            final byte[] out = new byte[head.length + name.length + body.length];
+            int offset = 0;
+            System.arraycopy(head, 0, out, offset, head.length);
+            offset += head.length;
+            System.arraycopy(name, 0, out, offset, name.length);
+            offset += name.length;
+            System.arraycopy(body, 0, out, offset, body.length);
+            return out;
+
         }
 
         @Override

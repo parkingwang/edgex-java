@@ -44,7 +44,7 @@ public class Sample {
             });
 
             final ScheduledExecutorService threads = Executors.newSingleThreadScheduledExecutor();
-            threads.schedule(new Runnable() {
+            threads.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
                     final long start = System.currentTimeMillis();
@@ -56,9 +56,10 @@ public class Sample {
                         log.error("Execute出错", e);
                         return;
                     }
+                    log.debug("################################");
                     log.debug(rep.bytes());
                 }
-            }, 3, TimeUnit.SECONDS);
+            }, 1, 3, TimeUnit.SECONDS);
 
             // Wait to shutdown
             try {
