@@ -1,6 +1,10 @@
 package edgex;
 
-import java.util.Map;
+import org.apache.log4j.Logger;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Class description goes here.
@@ -10,20 +14,61 @@ import java.util.Map;
  */
 public class Sample {
 
+    private static final Logger log = Logger.getLogger(Sample.class);
+
     public static void main(String[] args) {
         EdgeX.run(ctx -> {
-            Map<String, Object> conf = ctx.loadConfig();
-
             Driver driver = ctx.newDriver(new Driver.Options(
                     "TestDriver",
                     new String[]{
-                            "sample/app"
+                            "example/+",
+                            "scheduled/+",
                     }
             ));
 
             driver.process(msg -> {
                 // call execute to invoke endpoint device
+                final long recv = Long.parseLong(new String(msg.body()));
+                log.debug("Driver用时：" + (System.nanoTime() - recv) + "ns");
+
+                final long start = System.currentTimeMillis();
+                final Message rep;
+                try {
+                    rep = driver.execute("127.0.0.1:5570", msg, 1);
+                    log.error("Execute用时" + (System.nanoTime() - start) + "ns");
+                } catch (Exception e) {
+                    log.error("Execute出错", e);
+                    return;
+                }
+                log.debug(rep.bytes());
             });
+
+            final ScheduledExecutorService threads = Executors.newSingleThreadScheduledExecutor();
+            threads.schedule(new Runnable() {
+                @Override
+                public void run() {
+                    final long start = System.currentTimeMillis();
+                    final Message rep;
+                    try {
+                        rep = driver.execute("127.0.0.1:5570", Message.newString("SAMPLE", "ECHO000"), 1);
+                        log.error("Execute用时" + (System.nanoTime() - start) + "ns");
+                    } catch (Exception e) {
+                        log.error("Execute出错", e);
+                        return;
+                    }
+                    log.debug(rep.bytes());
+                }
+            }, 3, TimeUnit.SECONDS);
+
+            // Wait to shutdown
+            try {
+                driver.startup();
+                ctx.termChan().await();
+            } finally {
+                threads.shutdown();
+                driver.shutdown();
+                log.debug("服务终止");
+            }
         });
     }
 }

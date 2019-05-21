@@ -7,5 +7,11 @@ package edgex;
 @FunctionalInterface
 public interface Runner {
 
+    /**
+     * Run
+     *
+     * @param ctx Context
+     * @throws Exception If error
+     */
     void run(Context ctx) throws Exception;
 }

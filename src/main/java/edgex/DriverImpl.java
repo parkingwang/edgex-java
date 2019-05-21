@@ -1,5 +1,6 @@
 package edgex;
 
+import com.google.protobuf.ByteString;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.log4j.Logger;
@@ -9,7 +10,6 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
-import java.net.URI;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -48,14 +48,19 @@ final class DriverImpl implements Driver {
     @Override
     public Message execute(String endpointAddress, Message in, int timeoutSec) throws Exception {
         log.debug("GRPC调用Endpoint: " + endpointAddress);
-        final URI uri = URI.create(endpointAddress);
-        final ManagedChannel ch = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
+        final ManagedChannel ch = ManagedChannelBuilder.forTarget(endpointAddress)
                 .usePlaintext()
                 .build();
         final ExecuteGrpc.ExecuteFutureStub stub = ExecuteGrpc.newFutureStub(ch);
-        final Data req = Data.parseFrom(in.bytes());
-        final byte[] rep = stub.execute(req).get(timeoutSec, TimeUnit.SECONDS).toByteArray();
-        return Message.newBytes(rep);
+        final Data req = Data.newBuilder()
+                .setFrames(ByteString.copyFrom(in.bytes()))
+                .build();
+        try {
+            final byte[] rep = stub.execute(req).get(timeoutSec, TimeUnit.SECONDS).toByteArray();
+            return Message.parse(rep);
+        } finally {
+            ch.shutdown();
+        }
     }
 
     @Override
@@ -80,10 +85,12 @@ final class DriverImpl implements Driver {
         for (String t : this.mqttTopics) {
             log.debug("开启监听事件[TRIGGER]: " + t);
         }
+
+        final IMqttMessageListener listener = (topic, message) -> func.accept(Message.parse(message.getPayload()));
         try {
-            this.mqttClient.subscribe(this.mqttTopics, new IMqttMessageListener[]{
-                    (topic, message) -> this.func.accept(Message.newBytes(message.getPayload()))
-            });
+            for (String topic : this.mqttTopics) {
+                this.mqttClient.subscribe(topic, listener);
+            }
         } catch (MqttException e) {
             log.fatal("Mqtt客户端出错：", e);
         }

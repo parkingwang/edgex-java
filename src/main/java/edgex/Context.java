@@ -37,6 +37,11 @@ public interface Context {
      * @return 返回终止信号
      * @throws TimeoutException
      */
-    CountDownLatch termAwait() throws TimeoutException;
+    CountDownLatch termChan() throws TimeoutException;
+
+    /**
+     * 等待终止信号
+     */
+    void termAwait();
 
 }

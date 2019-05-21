@@ -7,7 +7,6 @@ import java.io.File;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 /**
@@ -52,8 +51,23 @@ final class ContextImpl implements Context {
     }
 
     @Override
-    public CountDownLatch termAwait() throws TimeoutException {
-        return null;
+    public CountDownLatch termChan() {
+        final CountDownLatch latch = new CountDownLatch(1);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (latch.getCount() > 0) {
+                latch.countDown();
+            }
+        }));
+        return latch;
+    }
+
+    @Override
+    public void termAwait() {
+        try {
+            this.termChan().await();
+        } catch (Exception e) {
+            log.error("等待终止信号超时");
+        }
     }
 
     private void checkRequired(Object item, String message) {
