@@ -53,7 +53,7 @@ final class DriverImpl implements Driver {
                 .build();
         final ExecuteGrpc.ExecuteFutureStub stub = ExecuteGrpc.newFutureStub(ch);
         final Data req = Data.newBuilder()
-                .setFrames(ByteString.copyFrom(in.bytes()))
+                .setFrames(ByteString.copyFrom(in.getFrames()))
                 .build();
         try {
             final byte[] rep = stub.execute(req).get(timeoutSec, TimeUnit.SECONDS).toByteArray();
@@ -65,30 +65,39 @@ final class DriverImpl implements Driver {
 
     @Override
     public void startup() {
-        try {
-            this.mqttClient = new MqttClient(this.scoped.mqttBroker,
-                    "Driver-" + this.options.name,
-                    new MemoryPersistence());
-            MqttConnectOptions opts = new MqttConnectOptions();
-            opts.setCleanSession(this.scoped.mqttClearSession);
-            opts.setAutomaticReconnect(this.scoped.mqttAutoReconnect);
-            opts.setKeepAliveInterval(this.scoped.mqttKeepAlive);
-            opts.setConnectionTimeout(this.scoped.mqttConnectTimeout);
-            log.info("Mqtt客户端连接Broker: " + this.scoped.mqttBroker);
-            this.mqttClient.connect(opts);
-            log.info("Mqtt客户端连接成功");
-        } catch (MqttException e) {
-            log.fatal("Mqtt客户端出错：", e);
-            return;
-        }
-        // 监听所有Trigger的UserTopic
-        for (String t : this.mqttTopics) {
-            log.debug("开启监听事件[TRIGGER]: " + t);
+        for (int i = 0; i < scoped.mqttMaxRetry; i++) {
+            try {
+                this.mqttClient = new MqttClient(this.scoped.mqttBroker,
+                        "Driver-" + this.options.name,
+                        new MemoryPersistence());
+                MqttConnectOptions opts = new MqttConnectOptions();
+                opts.setCleanSession(this.scoped.mqttClearSession);
+                opts.setAutomaticReconnect(this.scoped.mqttAutoReconnect);
+                opts.setKeepAliveInterval(this.scoped.mqttKeepAlive);
+                opts.setConnectionTimeout(this.scoped.mqttConnectTimeout);
+                log.info("Mqtt客户端连接Broker: " + this.scoped.mqttBroker);
+                this.mqttClient.connect(opts);
+                log.info("Mqtt客户端连接成功");
+                break;
+            } catch (MqttException e) {
+                log.error("Mqtt客户端出错：", e);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ex) {
+                    break;
+                }
+            }
         }
 
+        if (!this.mqttClient.isConnected()) {
+            log.fatal("Mqtt客户端无法连接Broker");
+        }
+
+        // 监听所有Trigger的UserTopic
         final IMqttMessageListener listener = (topic, message) -> func.accept(Message.parse(message.getPayload()));
         try {
             for (String topic : this.mqttTopics) {
+                log.debug("开启监听事件[TRIGGER]: " + topic);
                 this.mqttClient.subscribe(topic, listener);
             }
         } catch (MqttException e) {

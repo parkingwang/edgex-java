@@ -40,7 +40,7 @@ public class Sample {
                     log.error("Execute出错", e);
                     return;
                 }
-                log.debug(rep.bytes());
+                log.debug(">> RESP: " + rep.body());
             });
 
             final ScheduledExecutorService threads = Executors.newSingleThreadScheduledExecutor();
@@ -50,14 +50,17 @@ public class Sample {
                     final long start = System.currentTimeMillis();
                     final Message rep;
                     try {
-                        rep = driver.execute("127.0.0.1:5570", Message.newString("SAMPLE", "ECHO000"), 1);
-                        log.error("Execute用时" + (System.nanoTime() - start) + "ns");
+                        rep = driver.execute("localhost:6670",
+                                Message.newString("SAMPLE", "AT+CLEAN"),
+                                1);
+                        log.debug("Execute用时:" + (System.currentTimeMillis() - start) + "ms");
                     } catch (Exception e) {
                         log.error("Execute出错", e);
                         return;
                     }
-                    log.debug("################################");
-                    log.debug(rep.bytes());
+                    final String name = new String(rep.name());
+                    final String body = new String(rep.body());
+                    log.debug(">> Name: " + name + ", Body: " + body);
                 }
             }, 1, 3, TimeUnit.SECONDS);
 

@@ -17,7 +17,7 @@ public interface Message {
      *
      * @return 返回消息全部字节
      */
-    byte[] bytes();
+    byte[] getFrames();
 
     /**
      * 返回消息的Header
@@ -74,7 +74,7 @@ public interface Message {
         }
 
         @Override
-        public byte[] bytes() {
+        public byte[] getFrames() {
             final byte[] out = new byte[head.length + name.length + body.length];
             int offset = 0;
             System.arraycopy(head, 0, out, offset, head.length);
@@ -136,6 +136,8 @@ public interface Message {
                 head[0],
                 head[1]
         );
+
+        System.out.println("NameLen: " + header.nameLen);
 
         // name
         offset += head.length;
