@@ -112,11 +112,25 @@ public interface Message {
 
     ////
 
-    static Message newString(String name, String data) {
-        return newBytes(name.getBytes(), data.getBytes());
+    /**
+     * 根据字符数据，创建Message对象
+     *
+     * @param name 　Name
+     * @param body Body
+     * @return Message
+     */
+    static Message fromString(String name, String body) {
+        return fromBytes(name.getBytes(), body.getBytes());
     }
 
-    static Message newBytes(byte[] name, byte[] body) {
+    /**
+     * 根据字节数据，创建Message对象
+     *
+     * @param name Name
+     * @param body Body
+     * @return Message
+     */
+    static Message fromBytes(byte[] name, byte[] body) {
         if (name.length > FRAME_NAME_MAX_SIZE) {
             Logger.getLogger("MessageBuilder").fatal("Name len too large: " + name.length);
         }
@@ -126,6 +140,12 @@ public interface Message {
         }, name, body);
     }
 
+    /**
+     * 解析字节码数据为Message对象
+     *
+     * @param data 　数据
+     * @return Message
+     */
     static Message parse(byte[] data) {
         int offset = 0;
 
@@ -136,8 +156,6 @@ public interface Message {
                 head[0],
                 head[1]
         );
-
-        System.out.println("NameLen: " + header.nameLen);
 
         // name
         offset += head.length;

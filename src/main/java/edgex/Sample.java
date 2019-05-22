@@ -50,8 +50,8 @@ public class Sample {
                     final long start = System.currentTimeMillis();
                     final Message rep;
                     try {
-                        rep = driver.execute("localhost:6670",
-                                Message.newString("SAMPLE", "AT+CLEAN"),
+                        rep = driver.execute("localhost:5570",
+                                Message.fromString("SAMPLE", "AT+CLEAN"),
                                 1);
                         log.debug("Execute用时:" + (System.currentTimeMillis() - start) + "ms");
                     } catch (Exception e) {

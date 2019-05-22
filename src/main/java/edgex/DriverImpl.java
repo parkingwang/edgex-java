@@ -56,8 +56,10 @@ final class DriverImpl implements Driver {
                 .setFrames(ByteString.copyFrom(in.getFrames()))
                 .build();
         try {
-            final byte[] rep = stub.execute(req).get(timeoutSec, TimeUnit.SECONDS).toByteArray();
-            return Message.parse(rep);
+            final ByteString frames = stub.execute(req)
+                    .get(timeoutSec, TimeUnit.SECONDS)
+                    .getFrames();
+            return Message.parse(frames.toByteArray());
         } finally {
             ch.shutdown();
         }
