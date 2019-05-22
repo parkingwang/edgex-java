@@ -35,7 +35,7 @@ public interface Context {
      * 返回终止信号
      *
      * @return 返回终止信号
-     * @throws TimeoutException
+     * @throws TimeoutException If timeout
      */
     CountDownLatch termChan() throws TimeoutException;
 
