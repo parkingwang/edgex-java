@@ -1,4 +1,4 @@
-package edgex;
+package net.nextabc.edgex;
 
 /**
  * @author 陈永佳 (yoojiachen@gmail.com)

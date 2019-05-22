@@ -1,10 +1,6 @@
-package edgex;
+package net.nextabc.edgex;
 
 import org.apache.log4j.Logger;
-
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Class description goes here.

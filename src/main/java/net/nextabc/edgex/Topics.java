@@ -1,4 +1,4 @@
-package edgex;
+package net.nextabc.edgex;
 
 import org.apache.log4j.Logger;
 

@@ -1,4 +1,4 @@
-package edgex;
+package net.nextabc.edgex;
 
 import com.google.protobuf.ByteString;
 import io.grpc.ManagedChannel;

@@ -1,4 +1,4 @@
-package edgex;
+package net.nextabc.edgex;
 
 /**
  * 全局配置

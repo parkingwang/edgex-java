@@ -1,4 +1,4 @@
-package edgex;
+package net.nextabc.edgex;
 
 import com.moandjiezana.toml.Toml;
 import org.apache.log4j.Logger;
@@ -80,7 +80,7 @@ final class ContextImpl implements Context {
     }
 
     private void checkCtx() {
-        if (!serviceName.isEmpty()) {
+        if (null != serviceName && !serviceName.isEmpty()) {
             log.fatal("Context is used to :" + serviceName);
         }
     }

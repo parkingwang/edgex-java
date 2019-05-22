@@ -1,4 +1,4 @@
-package edgex;
+package net.nextabc.edgex;
 
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
