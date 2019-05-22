@@ -12,7 +12,6 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 /**
  * @author 陈永佳 (yoojiachen@gmail.com)
@@ -22,7 +21,7 @@ final class DriverImpl implements Driver {
 
     private static final Logger log = Logger.getLogger(DriverImpl.class);
 
-    private Consumer<Message> func;
+    private MessageHandler handler;
     private final GlobalScoped scoped;
     private final Driver.Options options;
 
@@ -41,8 +40,8 @@ final class DriverImpl implements Driver {
     }
 
     @Override
-    public void process(Consumer<Message> func) {
-        this.func = Objects.requireNonNull(func);
+    public void process(MessageHandler handler) {
+        this.handler = Objects.requireNonNull(handler);
     }
 
     @Override
@@ -96,7 +95,13 @@ final class DriverImpl implements Driver {
         }
 
         // 监听所有Trigger的UserTopic
-        final IMqttMessageListener listener = (topic, message) -> func.accept(Message.parse(message.getPayload()));
+        final IMqttMessageListener listener = (topic, message) -> {
+            try {
+                handler.handle(Message.parse(message.getPayload()));
+            } catch (Exception e) {
+                log.error("消息处理出错", e);
+            }
+        };
         try {
             for (String topic : this.mqttTopics) {
                 log.debug("开启监听事件[TRIGGER]: " + topic);
