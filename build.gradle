@@ -126,11 +126,11 @@ bintray {
     pkg {
         repo = 'maven'
         name = projectName
-        userOrg = 'yoojia'
+        userOrg = 'nextabc'
 
         licenses = ['Apache-2.0']
         vcsUrl = projectVCS
-        labels = ['java', 'EdgeX']
+        labels = ['Java', 'Mqtt', 'Edge']
 
         publicDownloadNumbers = true
 
@@ -147,7 +147,7 @@ def pomConfig = {
 
     name projectName
     url projectURL
-    inceptionYear '2018'
+    inceptionYear '2019'
 
     licenses {
         license {
