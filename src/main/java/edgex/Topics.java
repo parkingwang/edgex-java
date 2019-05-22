@@ -10,7 +10,7 @@ final class Topics {
 
     private static final Logger log = Logger.getLogger(Topics.class);
 
-    static final String TRIGGER = "$EDGEX/EVENTS/${user-topic}";
+    private static final String TRIGGER = "$EDGEX/EVENTS/${user-topic}";
 
     private Topics() {
     }
