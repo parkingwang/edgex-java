@@ -44,6 +44,7 @@ final class ContextImpl implements Context {
 
     @Override
     public Driver newDriver(Driver.Options opts) {
+        checkCtx();
         this.serviceName = "Driver";
         checkRequired(opts.name, "Trigger.Name MUST be specified");
         checkRequired(opts.topics, "Trigger.Topic MUST be specified");
@@ -53,11 +54,7 @@ final class ContextImpl implements Context {
     @Override
     public CountDownLatch termChan() {
         final CountDownLatch latch = new CountDownLatch(1);
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            if (latch.getCount() > 0) {
-                latch.countDown();
-            }
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(latch::countDown));
         return latch;
     }
 
@@ -66,7 +63,7 @@ final class ContextImpl implements Context {
         try {
             this.termChan().await();
         } catch (Exception e) {
-            log.error("等待终止信号超时");
+            log.error("等待终止信号超时", e);
         }
     }
 
@@ -82,5 +79,9 @@ final class ContextImpl implements Context {
         }
     }
 
-
+    private void checkCtx() {
+        if (!serviceName.isEmpty()) {
+            log.fatal("Context is used to :" + serviceName);
+        }
+    }
 }

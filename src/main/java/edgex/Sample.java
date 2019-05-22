@@ -26,50 +26,50 @@ public class Sample {
                     }
             ));
 
-            driver.process(msg -> {
-                // call execute to invoke endpoint device
-                final long recv = Long.parseLong(new String(msg.body()));
-                log.debug("Driver用时：" + (System.nanoTime() - recv) + "ns");
-
-                final long start = System.currentTimeMillis();
-                final Message rep;
-                try {
-                    rep = driver.execute("127.0.0.1:5570", msg, 1);
-                    log.error("Execute用时" + (System.nanoTime() - start) + "ns");
-                } catch (Exception e) {
-                    log.error("Execute出错", e);
-                    return;
-                }
-                log.debug(">> RESP: " + rep.body());
-            });
-
-            final ScheduledExecutorService threads = Executors.newSingleThreadScheduledExecutor();
-            threads.scheduleAtFixedRate(new Runnable() {
-                @Override
-                public void run() {
-                    final long start = System.currentTimeMillis();
-                    final Message rep;
-                    try {
-                        rep = driver.execute("localhost:6600",
-                                Message.fromString("SAMPLE", "AT+CLEAN"),
-                                1);
-                        log.debug("Execute用时:" + (System.currentTimeMillis() - start) + "ms");
-                    } catch (Exception e) {
-                        log.error("Execute出错", e);
-                        return;
-                    }
-                    final String name = new String(rep.name());
-                    final String body = new String(rep.body());
-                    log.debug(">> Name: " + name + ", Body: " + body);
-                }
-            }, 1, 3, TimeUnit.SECONDS);
+//            driver.process(msg -> {
+//                // call execute to invoke endpoint device
+//                final long recv = Long.parseLong(new String(msg.body()));
+//                log.debug("Driver用时：" + (System.nanoTime() - recv) + "ns");
+//
+//                final long start = System.currentTimeMillis();
+//                final Message rep;
+//                try {
+//                    rep = driver.execute("127.0.0.1:5570", msg, 1);
+//                    log.error("Execute用时" + (System.nanoTime() - start) + "ns");
+//                } catch (Exception e) {
+//                    log.error("Execute出错", e);
+//                    return;
+//                }
+//                log.debug(">> RESP: " + rep.body());
+//            });
+//
+//            final ScheduledExecutorService threads = Executors.newSingleThreadScheduledExecutor();
+//            threads.scheduleAtFixedRate(new Runnable() {
+//                @Override
+//                public void run() {
+//                    final long start = System.currentTimeMillis();
+//                    final Message rep;
+//                    try {
+//                        rep = driver.execute("localhost:6600",
+//                                Message.fromString("SAMPLE", "AT+CLEAN"),
+//                                1);
+//                        log.debug("Execute用时:" + (System.currentTimeMillis() - start) + "ms");
+//                    } catch (Exception e) {
+//                        log.error("Execute出错", e);
+//                        return;
+//                    }
+//                    final String name = new String(rep.name());
+//                    final String body = new String(rep.body());
+//                    log.debug(">> Name: " + name + ", Body: " + body);
+//                }
+//            }, 1, 3, TimeUnit.SECONDS);
 
             // Wait to shutdown
             try {
                 driver.startup();
-                ctx.termChan().await();
+                ctx.termAwait();
             } finally {
-                threads.shutdown();
+//                threads.shutdown();
                 driver.shutdown();
                 log.debug("服务终止");
             }

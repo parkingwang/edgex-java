@@ -16,7 +16,7 @@ public class EdgeX {
     public static void run(Runner handler) {
         String broker = System.getenv("MQTT.broker");
         if (null == broker || broker.isEmpty()) {
-            broker = "tcp://localhost:1883";
+            broker = "tcp://mqtt-broker.edgex.io:1883";
         }
         final GlobalScoped scoped = GlobalScoped.getDefault(broker);
         final Context ctx = new ContextImpl(scoped);
