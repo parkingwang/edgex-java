@@ -100,7 +100,7 @@ final class DriverImpl implements Driver {
         try {
             for (String topic : this.mqttTopics) {
                 log.debug("开启监听事件[TRIGGER]: " + topic);
-                this.mqttClient.subscribe(topic, listener);
+                this.mqttClient.subscribe(topic, 0, listener);
             }
         } catch (MqttException e) {
             log.fatal("Mqtt客户端出错：", e);
