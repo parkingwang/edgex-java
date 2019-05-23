@@ -14,7 +14,7 @@ public class EdgeX {
     }
 
     public static void run(Runner handler) {
-        String broker = System.getenv("MQTT.broker");
+        String broker = System.getenv("MQTTBroker");
         if (null == broker || broker.isEmpty()) {
             broker = "tcp://mqtt-broker.edgex.io:1883";
         }
