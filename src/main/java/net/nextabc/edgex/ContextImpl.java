@@ -46,8 +46,8 @@ final class ContextImpl implements Context {
     public Driver newDriver(Driver.Options opts) {
         checkCtx();
         this.serviceName = "Driver";
-        checkRequired(opts.name, "Trigger.Name MUST be specified");
-        checkRequired(opts.topics, "Trigger.Topic MUST be specified");
+        checkRequired(opts.name, "Driver.Name MUST be specified");
+        checkRequired(opts.topics, "Driver.Topic MUST be specified");
         return new DriverImpl(this.scoped, opts);
     }
 
