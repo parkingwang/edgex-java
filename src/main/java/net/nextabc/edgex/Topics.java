@@ -33,4 +33,9 @@ final public class Topics {
         }
         return TRIGGER.replace("${user-topic}", topic);
     }
+
+    static boolean isTopLevelTopic(String topic) {
+        return topic.startsWith("$EDGEX/EVENTS/") ||
+                topic.startsWith("$EDGEX/DEVICES/");
+    }
 }

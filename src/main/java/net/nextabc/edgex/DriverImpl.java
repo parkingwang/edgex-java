@@ -35,7 +35,12 @@ final class DriverImpl implements Driver {
         final int size = this.options.topics.length;
         this.mqttTopics = new String[size];
         for (int i = 0; i < size; i++) {
-            this.mqttTopics[i] = Topics.topicOfTrigger(this.options.topics[i]);
+            final String topic = this.options.topics[i];
+            if (Topics.isTopLevelTopic(topic)) {
+                this.mqttTopics[i] = topic;
+            } else {
+                this.mqttTopics[i] = Topics.topicOfTrigger(topic);
+            }
         }
     }
 
@@ -104,7 +109,7 @@ final class DriverImpl implements Driver {
         };
         try {
             for (String topic : this.mqttTopics) {
-                log.debug("开启监听事件[TRIGGER]: " + topic);
+                log.debug("开启监听事件: " + topic);
                 this.mqttClient.subscribe(topic, 0, listener);
             }
         } catch (MqttException e) {
