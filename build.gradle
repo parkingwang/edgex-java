@@ -46,10 +46,11 @@ dependencies {
     compile 'com.moandjiezana.toml:toml4j:0.7.2'
     // MQTT
     compile 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.1'
-    // gRPC, ProtoBuf
+    // gRPC
     compile 'io.grpc:grpc-netty-shaded:1.20.0'
     compile 'io.grpc:grpc-protobuf:1.20.0'
     compile 'io.grpc:grpc-stub:1.20.0'
+    // ProtoBuf
     compile 'com.google.protobuf:protobuf-java:3.7.1'
     testCompile 'junit:junit:4.12'
 }
@@ -70,7 +71,7 @@ protobuf {
             // options.  Note the braces cannot be omitted, otherwise the
             // plugin will not be added. This is because of the implicit way
             // NamedDomainObjectContainer binds the methods.
-            grpc { }
+            grpc {}
         }
     }
 }

@@ -12,6 +12,11 @@ final class Topics {
 
     private static final String TRIGGER = "$EDGEX/EVENTS/${user-topic}";
 
+    public static final String TopicDeviceInspect = "$EDGEX/DEVICES/INSPECT/#";
+    public static final String TopicDeviceOffline = "$EDGEX/DEVICES/OFFLINE/#";
+    public static final String TopicDeviceALIVE = "$EDGEX/DEVICES/ALIVE/#";
+    public static final String TopicDeviceEvents = "$EDGEX/EVENTS/#";
+
     private Topics() {
     }
     ////
