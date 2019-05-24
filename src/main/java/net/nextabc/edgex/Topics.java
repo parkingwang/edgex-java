@@ -6,7 +6,7 @@ import org.apache.log4j.Logger;
  * @author 陈永佳 (yoojiachen@gmail.com)
  * @version 0.0.1
  */
-final class Topics {
+final public class Topics {
 
     private static final Logger log = Logger.getLogger(Topics.class);
 
