@@ -28,7 +28,10 @@ final class ContextImpl implements Context {
 
     @Override
     public Map<String, Object> loadConfig() {
-        final File file = Stream.of(DEFAULT_CONF_NAME, DEFAULT_CONF_FILE, System.getenv(APP_CONF_ENV_KEY))
+        final File file = Stream.of(
+                DEFAULT_CONF_NAME,
+                DEFAULT_CONF_FILE,
+                System.getenv(ENV_KEY_APP_CONF))
                 .map(File::new)
                 .filter(File::exists)
                 .findFirst()

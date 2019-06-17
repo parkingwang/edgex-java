@@ -12,9 +12,13 @@ import java.util.concurrent.TimeoutException;
  */
 public interface Context {
 
-    String APP_CONF_ENV_KEY = "EdgeX.Config";
+    String ENV_KEY_MQTT_BROKER = "EDGEX_MQTT_BROKER";
+    String ENV_KEY_APP_CONF = "EDGEX_CONFIG";
     String DEFAULT_CONF_NAME = "application.toml";
     String DEFAULT_CONF_FILE = "/etc/edgex/application.toml";
+
+    String DEFAULT_MQTT_BROKER = "tcp://mqtt-broker.edgex.io:1883";
+
 
     /**
      * 加载配置文件
