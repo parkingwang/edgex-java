@@ -28,11 +28,11 @@ public interface Driver extends LifeCycle {
 
     final class Options {
 
-        final String name;
+        final String nodeName;
         final String[] topics;
 
-        public Options(String name, String[] topics) {
-            this.name = name;
+        public Options(String nodeName, String[] topics) {
+            this.nodeName = nodeName;
             this.topics = topics;
         }
     }

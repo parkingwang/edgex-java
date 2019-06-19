@@ -13,4 +13,4 @@ service Execute {
     }
 }
 
-// ./gradoew clean build
+// ./gradlew clean build
