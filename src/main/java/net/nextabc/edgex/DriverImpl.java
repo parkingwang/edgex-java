@@ -24,6 +24,7 @@ final class DriverImpl implements Driver {
     private MessageHandler handler;
     private final GlobalScoped scoped;
     private final Driver.Options options;
+    private final ExpiringMap<String, ManagedChannel> channels = new ExpiringMap<>(ManagedChannel::shutdown);
 
     private final String[] mqttTopics;
     private MqttClient mqttClient;
@@ -52,21 +53,28 @@ final class DriverImpl implements Driver {
     @Override
     public Message execute(String endpointAddress, Message in, int timeoutSec) throws Exception {
         log.debug("GRPC调用Endpoint: " + endpointAddress);
-        final ManagedChannel ch = ManagedChannelBuilder.forTarget(endpointAddress)
-                .usePlaintext()
-                .build();
-        final ExecuteGrpc.ExecuteFutureStub stub = ExecuteGrpc.newFutureStub(ch);
+        ManagedChannel channel;
+        synchronized (channels) {
+            channel = channels.get(endpointAddress);
+            if (null == channel) {
+                channel = ManagedChannelBuilder.forTarget(endpointAddress)
+                        .keepAliveWithoutCalls(true)
+                        .keepAliveTimeout(30, TimeUnit.SECONDS)
+                        .usePlaintext()
+                        .build();
+                // keep 6 hours
+                channels.put(endpointAddress, channel, 1000 * 60 * 60 * 6);
+            }
+        }
+        final ExecuteGrpc.ExecuteFutureStub stub = ExecuteGrpc.newFutureStub(channel);
         final Data req = Data.newBuilder()
                 .setFrames(ByteString.copyFrom(in.getFrames()))
                 .build();
-        try {
-            final ByteString frames = stub.execute(req)
-                    .get(timeoutSec, TimeUnit.SECONDS)
-                    .getFrames();
-            return Message.parse(frames.toByteArray());
-        } finally {
-            ch.shutdown();
-        }
+        return Message.parse(stub
+                .execute(req)
+                .get(timeoutSec, TimeUnit.SECONDS)
+                .getFrames()
+                .toByteArray());
     }
 
     @Override
