@@ -1,7 +1,7 @@
 buildscript {
     repositories {
-        maven { url "https://maven.aliyun.com/repository/public" }
         jcenter()
+        maven { url "https://maven.aliyun.com/repository/public" }
     }
     // gRPC, ProtoBuf
     dependencies {
@@ -29,7 +29,7 @@ repositories {
 
 
 group 'net.nextabc'
-version '1.1.3'
+version '1.1.4'
 description = 'Edge X for java'
 
 
@@ -47,11 +47,12 @@ dependencies {
     // MQTT
     compile 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.1'
     // gRPC
-    compile 'io.grpc:grpc-netty-shaded:1.20.0'
-    compile 'io.grpc:grpc-protobuf:1.20.0'
-    compile 'io.grpc:grpc-stub:1.20.0'
+    compile 'io.grpc:grpc-netty-shaded:1.21.0'
+    compile 'io.grpc:grpc-protobuf:1.21.0'
+    compile 'io.grpc:grpc-stub:1.21.0'
     // ProtoBuf
     compile 'com.google.protobuf:protobuf-java:3.7.1'
+    compile 'javax.annotation:javax.annotation-api:1.3.2'
     testCompile 'junit:junit:4.12'
 }
 
@@ -62,15 +63,11 @@ protobuf {
     }
     plugins {
         grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java:1.20.0'
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.21.0'
         }
     }
     generateProtoTasks {
-        ofSourceSet('main')*.plugins {
-            // Apply the "grpc" plugin whose spec is defined above, without
-            // options.  Note the braces cannot be omitted, otherwise the
-            // plugin will not be added. This is because of the implicit way
-            // NamedDomainObjectContainer binds the methods.
+        all()*.plugins {
             grpc {}
         }
     }

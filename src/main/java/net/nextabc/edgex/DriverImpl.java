@@ -82,7 +82,7 @@ final class DriverImpl implements Driver {
         for (int i = 0; i < scoped.mqttMaxRetry; i++) {
             try {
                 this.mqttClient = new MqttClient(this.scoped.mqttBroker,
-                        "Driver-" + this.options.name,
+                        "Driver-" + this.options.nodeName,
                         new MemoryPersistence());
                 MqttConnectOptions opts = new MqttConnectOptions();
                 opts.setCleanSession(this.scoped.mqttClearSession);
