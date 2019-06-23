@@ -13,5 +13,5 @@ repositories {
 Dep:
 
 ```gradle
-compile 'net.nextabc:edgex:1.1.2'
+compile 'net.nextabc:edgex:1.1.4'
 ```
