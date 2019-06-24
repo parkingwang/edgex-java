@@ -36,6 +36,12 @@ public interface Context {
     Driver newDriver(Driver.Options opts);
 
     /**
+     * 创建Executor
+     * @return Executor对象
+     */
+    Executor newExecutor();
+
+    /**
      * 返回终止信号
      *
      * @return 返回终止信号

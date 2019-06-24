@@ -4,14 +4,8 @@ package net.nextabc.edgex;
  * @author 陈永佳 (yoojiachen@gmail.com)
  * @version 0.0.1
  */
+@Deprecated
 @FunctionalInterface
-public interface Runner {
+public interface Runner extends Application{
 
-    /**
-     * Run
-     *
-     * @param ctx Context
-     * @throws Exception If error
-     */
-    void run(Context ctx) throws Exception;
 }

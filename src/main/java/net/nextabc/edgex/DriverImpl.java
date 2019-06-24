@@ -1,8 +1,5 @@
 package net.nextabc.edgex;
 
-import com.google.protobuf.ByteString;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import org.apache.log4j.Logger;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -11,7 +8,6 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author 陈永佳 (yoojiachen@gmail.com)
@@ -24,7 +20,8 @@ final class DriverImpl implements Driver {
     private MessageHandler handler;
     private final GlobalScoped scoped;
     private final Driver.Options options;
-    private final ExpiringMap<String, ManagedChannel> channels = new ExpiringMap<>(ManagedChannel::shutdown);
+
+    private final Executor executor;
 
     private final String[] mqttTopics;
     private MqttClient mqttClient;
@@ -32,8 +29,12 @@ final class DriverImpl implements Driver {
     DriverImpl(GlobalScoped scoped, Options options) {
         this.scoped = Objects.requireNonNull(scoped);
         this.options = Objects.requireNonNull(options);
+        this.executor = new ExecutorImpl(this.scoped);
         // topics
         final int size = this.options.topics.length;
+        if (size == 0) {
+            log.fatal("Mqtt topics must be specified");
+        }
         this.mqttTopics = new String[size];
         for (int i = 0; i < size; i++) {
             final String topic = this.options.topics[i];
@@ -52,29 +53,7 @@ final class DriverImpl implements Driver {
 
     @Override
     public Message execute(String endpointAddress, Message in, int timeoutSec) throws Exception {
-        log.debug("GRPC调用Endpoint: " + endpointAddress);
-        ManagedChannel channel;
-        synchronized (channels) {
-            channel = channels.get(endpointAddress);
-            if (null == channel) {
-                channel = ManagedChannelBuilder.forTarget(endpointAddress)
-                        .keepAliveWithoutCalls(true)
-                        .keepAliveTimeout(30, TimeUnit.SECONDS)
-                        .usePlaintext()
-                        .build();
-                // keep 6 hours
-                channels.put(endpointAddress, channel, 1000 * 60 * 60 * 6);
-            }
-        }
-        final ExecuteGrpc.ExecuteFutureStub stub = ExecuteGrpc.newFutureStub(channel);
-        final Data req = Data.newBuilder()
-                .setFrames(ByteString.copyFrom(in.getFrames()))
-                .build();
-        return Message.parse(stub
-                .execute(req)
-                .get(timeoutSec, TimeUnit.SECONDS)
-                .getFrames()
-                .toByteArray());
+        return this.executor.execute(endpointAddress, in, timeoutSec);
     }
 
     @Override
@@ -118,7 +97,7 @@ final class DriverImpl implements Driver {
         try {
             for (String topic : this.mqttTopics) {
                 log.debug("开启监听事件: " + topic);
-                this.mqttClient.subscribe(topic, 0, listener);
+                this.mqttClient.subscribe(topic, this.scoped.mqttQoS, listener);
             }
         } catch (MqttException e) {
             log.fatal("Mqtt客户端出错：", e);
@@ -127,9 +106,11 @@ final class DriverImpl implements Driver {
 
     @Override
     public void shutdown() {
+
         for (String t : this.mqttTopics) {
             log.debug("取消监听事件[TRIGGER]: " + t);
         }
+
         try {
             this.mqttClient.unsubscribe(this.mqttTopics);
         } catch (MqttException e) {

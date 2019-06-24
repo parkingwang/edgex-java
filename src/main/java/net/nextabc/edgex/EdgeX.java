@@ -13,20 +13,57 @@ public class EdgeX {
     private EdgeX() {
     }
 
-    public static void run(Runner handler) {
-        String broker = System.getenv(Context.ENV_KEY_MQTT_BROKER);
-        if (null == broker || broker.isEmpty()) {
-            broker = Context.DEFAULT_MQTT_BROKER;
-        }
-        final GlobalScoped scoped = GlobalScoped.getDefault(broker);
-        final Context ctx = new ContextImpl(scoped);
+    /**
+     * 运行Application
+     * @param application Application
+     */
+    public static void run(Application application) {
+        final Context ctx = createContext();
         try {
             log.info("启动Service");
-            handler.run(ctx);
+            application.run(ctx);
         } catch (Exception e) {
             log.error("Service出错", e);
         } finally {
             log.info("停止Service");
         }
+    }
+
+    /**
+     * 创建Context
+     * @return Context
+     */
+    public static Context createContext(){
+        String broker = System.getenv(Context.ENV_KEY_MQTT_BROKER);
+        if (null == broker || broker.isEmpty()) {
+            broker = Context.DEFAULT_MQTT_BROKER;
+        }
+        return createContext(broker);
+    }
+
+    /**
+     * 创建Context，指定Broker
+     * @param  broker Broker Address
+     * @return Context
+     */
+    public static Context createContext(String broker){
+        return new ContextImpl(createDefaultGlobalScoped(broker));
+    }
+
+    public static GlobalScoped createDefaultGlobalScoped(String broker) {
+        return new GlobalScoped(
+                broker,
+                2,
+                false,
+                true,
+                true,
+                3,
+                3,
+                5,
+                3,
+                60,
+                true,
+                30,
+                1000 * 60 * 60 * 6);
     }
 }

@@ -19,9 +19,13 @@ public class GlobalScoped {
     final int mqttReconnectInterval;
     final int mqttMaxRetry;
 
-    public GlobalScoped(String broker, int qos, boolean retained, boolean autoReconnect,
-                        boolean clearSession, int keepAlive, int pingTimeout, int connectTimeout, int reconnectInterval,
-                        int maxRetry) {
+    final boolean grpcKeepAlive;
+    final int grpcKeepAliveTimeoutSec;
+    final int grpcConnectionCacheTTL;
+
+    public GlobalScoped(String broker, int qos, boolean retained,
+                        boolean autoReconnect, boolean clearSession, int keepAlive, int pingTimeout, int connectTimeout, int reconnectInterval, int maxRetry,
+                        boolean grpcKeepAlive, int grpcKeepAliveTimeoutSec, int grpcConnectionCacheTTL) {
         this.mqttBroker = broker;
         this.mqttQoS = qos;
         this.mqttRetained = retained;
@@ -32,19 +36,9 @@ public class GlobalScoped {
         this.mqttConnectTimeout = connectTimeout;
         this.mqttReconnectInterval = reconnectInterval;
         this.mqttMaxRetry = maxRetry;
+        this.grpcKeepAlive = grpcKeepAlive;
+        this.grpcKeepAliveTimeoutSec = grpcKeepAliveTimeoutSec;
+        this.grpcConnectionCacheTTL = grpcConnectionCacheTTL;
     }
 
-    public static GlobalScoped getDefault(String broker) {
-        return new GlobalScoped(
-                broker,
-                2,
-                false,
-                true,
-                true,
-                3,
-                3,
-                5,
-                3,
-                60);
-    }
 }
