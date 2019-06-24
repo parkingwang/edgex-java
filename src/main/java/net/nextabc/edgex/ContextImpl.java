@@ -55,6 +55,13 @@ final class ContextImpl implements Context {
     }
 
     @Override
+    public Executor newExecutor() {
+        checkCtx();
+        this.serviceName = "Executor";
+        return new ExecutorImpl(this.scoped);
+    }
+
+    @Override
     public CountDownLatch termChan() {
         final CountDownLatch latch = new CountDownLatch(1);
         Runtime.getRuntime().addShutdownHook(new Thread(latch::countDown));
