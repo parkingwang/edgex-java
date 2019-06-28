@@ -18,7 +18,7 @@ final class DriverImpl implements Driver {
     private static final Logger log = Logger.getLogger(DriverImpl.class);
 
     private MessageHandler handler;
-    private final GlobalScoped scoped;
+    private final Globals globals;
     private final Driver.Options options;
 
     private final Executor executor;
@@ -26,10 +26,10 @@ final class DriverImpl implements Driver {
     private final String[] mqttTopics;
     private MqttClient mqttClient;
 
-    DriverImpl(GlobalScoped scoped, Options options) {
-        this.scoped = Objects.requireNonNull(scoped);
+    DriverImpl(Globals globals, Options options) {
+        this.globals = Objects.requireNonNull(globals);
         this.options = Objects.requireNonNull(options);
-        this.executor = new ExecutorImpl(this.scoped);
+        this.executor = new ExecutorImpl(this.globals);
         // topics
         final int size = this.options.topics.length;
         if (size == 0) {
@@ -58,17 +58,18 @@ final class DriverImpl implements Driver {
 
     @Override
     public void startup() {
-        for (int i = 0; i < scoped.mqttMaxRetry; i++) {
+        final String clientId = "EX-Driver-" + this.options.nodeName;
+        final MemoryPersistence mp = new MemoryPersistence();
+        try {
+            this.mqttClient = new MqttClient(this.globals.mqttBroker, clientId, mp);
+        } catch (MqttException e) {
+            log.fatal("Mqtt客户端错误", e);
+        }
+        final MqttConnectOptions opts = new MqttConnectOptions();
+        opts.setWill(Topics.topicOfOffline("Driver", this.options.nodeName), "offline".getBytes(), 1, true);
+        Mqtt.setup(this.globals, opts);
+        for (int i = 0; i < globals.mqttMaxRetry; i++) {
             try {
-                this.mqttClient = new MqttClient(this.scoped.mqttBroker,
-                        "Driver-" + this.options.nodeName,
-                        new MemoryPersistence());
-                MqttConnectOptions opts = new MqttConnectOptions();
-                opts.setCleanSession(this.scoped.mqttClearSession);
-                opts.setAutomaticReconnect(this.scoped.mqttAutoReconnect);
-                opts.setKeepAliveInterval(this.scoped.mqttKeepAlive);
-                opts.setConnectionTimeout(this.scoped.mqttConnectTimeout);
-                log.info("Mqtt客户端连接Broker: " + this.scoped.mqttBroker);
                 this.mqttClient.connect(opts);
                 log.info("Mqtt客户端连接成功");
                 break;
@@ -97,7 +98,7 @@ final class DriverImpl implements Driver {
         try {
             for (String topic : this.mqttTopics) {
                 log.debug("开启监听事件: " + topic);
-                this.mqttClient.subscribe(topic, this.scoped.mqttQoS, listener);
+                this.mqttClient.subscribe(topic, this.globals.mqttQoS, listener);
             }
         } catch (MqttException e) {
             log.fatal("Mqtt客户端出错：", e);

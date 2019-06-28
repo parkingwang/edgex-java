@@ -6,9 +6,11 @@ package net.nextabc.edgex;
  * @author 陈永佳 (yoojiachen@gmail.com)
  * @version 0.0.1
  */
-public class GlobalScoped {
+public class Globals {
 
     final String mqttBroker;
+    final String mqttUsername;
+    final String mqttPassword;
     final int mqttQoS;
     final boolean mqttRetained;
     final boolean mqttAutoReconnect;
@@ -23,10 +25,12 @@ public class GlobalScoped {
     final int grpcKeepAliveTimeoutSec;
     final int grpcConnectionCacheTTL;
 
-    public GlobalScoped(String broker, int qos, boolean retained,
-                        boolean autoReconnect, boolean clearSession, int keepAlive, int pingTimeout, int connectTimeout, int reconnectInterval, int maxRetry,
-                        boolean grpcKeepAlive, int grpcKeepAliveTimeoutSec, int grpcConnectionCacheTTL) {
+    public Globals(String broker, String mqttUsername, String mqttPassword, int qos, boolean retained,
+                   boolean autoReconnect, boolean clearSession, int keepAlive, int pingTimeout, int connectTimeout, int reconnectInterval, int maxRetry,
+                   boolean grpcKeepAlive, int grpcKeepAliveTimeoutSec, int grpcConnectionCacheTTL) {
         this.mqttBroker = broker;
+        this.mqttUsername = mqttUsername;
+        this.mqttPassword = mqttPassword;
         this.mqttQoS = qos;
         this.mqttRetained = retained;
         this.mqttAutoReconnect = autoReconnect;

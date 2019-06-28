@@ -19,19 +19,19 @@ final class ContextImpl implements Context {
 
     private static final Logger log = Logger.getLogger(ContextImpl.class);
 
-    private final GlobalScoped scoped;
-    private String serviceName;
+    private final Globals globals;
+    private String nodeName;
 
-    ContextImpl(GlobalScoped scoped) {
-        this.scoped = scoped;
+    ContextImpl(Globals globals) {
+        this.globals = globals;
     }
 
     @Override
     public Map<String, Object> loadConfig() {
         final File file = Stream.of(
-                DEFAULT_CONF_NAME,
-                DEFAULT_CONF_FILE,
-                System.getenv(ENV_KEY_APP_CONF))
+                DefaultConfName,
+                DefaultConfFile,
+                System.getenv(EnvKeyConfig))
                 .map(File::new)
                 .filter(File::exists)
                 .findFirst()
@@ -48,17 +48,17 @@ final class ContextImpl implements Context {
     @Override
     public Driver newDriver(Driver.Options opts) {
         checkCtx();
-        this.serviceName = "Driver";
+        this.nodeName = "Driver";
         checkRequired(opts.nodeName, "Driver.Name MUST be specified");
         checkRequired(opts.topics, "Driver.Topic MUST be specified");
-        return new DriverImpl(this.scoped, opts);
+        return new DriverImpl(this.globals, opts);
     }
 
     @Override
     public Executor newExecutor() {
         checkCtx();
-        this.serviceName = "Executor";
-        return new ExecutorImpl(this.scoped);
+        this.nodeName = "Executor";
+        return new ExecutorImpl(this.globals);
     }
 
     @Override
@@ -90,8 +90,8 @@ final class ContextImpl implements Context {
     }
 
     private void checkCtx() {
-        if (null != serviceName && !serviceName.isEmpty()) {
-            log.fatal("Context is used to :" + serviceName);
+        if (null != nodeName && !nodeName.isEmpty()) {
+            log.fatal("Context is used to :" + nodeName);
         }
     }
 }

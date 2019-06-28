@@ -20,10 +20,10 @@ public class ExecutorImpl implements Executor {
         Runtime.getRuntime().addShutdownHook(new Thread(CACHE_CHANNELS::clear));
     }
 
-    private final GlobalScoped scoped;
+    private final Globals globals;
 
-    public ExecutorImpl(GlobalScoped scoped) {
-        this.scoped = scoped;
+    public ExecutorImpl(Globals globals) {
+        this.globals = globals;
     }
 
     @Override
@@ -49,12 +49,12 @@ public class ExecutorImpl implements Executor {
         final ManagedChannelBuilder builder = ManagedChannelBuilder
                 .forTarget(endpointAddress)
                 .usePlaintext();
-        if (this.scoped.grpcKeepAlive) {
+        if (this.globals.grpcKeepAlive) {
             builder.keepAliveWithoutCalls(true)
-                    .keepAliveTimeout(this.scoped.grpcKeepAliveTimeoutSec, TimeUnit.SECONDS);
+                    .keepAliveTimeout(this.globals.grpcKeepAliveTimeoutSec, TimeUnit.SECONDS);
         }
         final ManagedChannel newChannel = builder.build();
-        CACHE_CHANNELS.put(endpointAddress, newChannel, this.scoped.grpcConnectionCacheTTL);
+        CACHE_CHANNELS.put(endpointAddress, newChannel, this.globals.grpcConnectionCacheTTL);
         return newChannel;
     }
 }

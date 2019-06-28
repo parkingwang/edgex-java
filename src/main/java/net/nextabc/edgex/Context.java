@@ -12,13 +12,20 @@ import java.util.concurrent.TimeoutException;
  */
 public interface Context {
 
-    String ENV_KEY_MQTT_BROKER = "EDGEX_MQTT_BROKER";
-    String ENV_KEY_APP_CONF = "EDGEX_CONFIG";
-    String DEFAULT_CONF_NAME = "application.toml";
-    String DEFAULT_CONF_FILE = "/etc/edgex/application.toml";
+    String EnvKeyMQBroker       = "EDGEX_MQTT_BROKER";
+    String EnvKeyMQUsername     = "EDGEX_MQTT_USERNAME";
+    String EnvKeyMQPassword     = "EDGEX_MQTT_PASSWORD";
+    String EnvKeyMQQOS          = "EDGEX_MQTT_QOS";
+    String EnvKeyMQRetained     = "EDGEX_MQTT_RETAINED";
+    String EnvKeyMQCleanSession = "EDGEX_MQTT_CLEAN_SESSION";
+    String EnvKeyConfig         = "EDGEX_CONFIG";
+    String EnvKeyLogVerbose     = "EDGEX_LOG_VERBOSE";
+    String EnvKeyGrpcAddress    = "EDGEX_GRPC_ADDRESS";
 
-    String DEFAULT_MQTT_BROKER = "tcp://mqtt-broker.edgex.io:1883";
+    String MqttBrokerDefault = "tcp://mqtt-broker.edgex.io:1883";
 
+    String DefaultConfName = "application.toml";
+    String DefaultConfFile = "/etc/edgex/application.toml";
 
     /**
      * 加载配置文件

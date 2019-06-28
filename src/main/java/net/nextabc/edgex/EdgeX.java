@@ -2,6 +2,8 @@ package net.nextabc.edgex;
 
 import org.apache.log4j.Logger;
 
+import static net.nextabc.edgex.Context.*;
+
 /**
  * @author 陈永佳 (yoojiachen@gmail.com)
  * @version 0.0.1
@@ -15,6 +17,7 @@ public class EdgeX {
 
     /**
      * 运行Application
+     *
      * @param application Application
      */
     public static void run(Application application) {
@@ -31,39 +34,30 @@ public class EdgeX {
 
     /**
      * 创建Context
+     *
      * @return Context
      */
-    public static Context createContext(){
-        String broker = System.getenv(Context.ENV_KEY_MQTT_BROKER);
-        if (null == broker || broker.isEmpty()) {
-            broker = Context.DEFAULT_MQTT_BROKER;
-        }
-        return createContext(broker);
+    public static Context createContext() {
+        return new ContextImpl(createDefaultGlobals());
     }
 
-    /**
-     * 创建Context，指定Broker
-     * @param  broker Broker Address
-     * @return Context
-     */
-    public static Context createContext(String broker){
-        return new ContextImpl(createDefaultGlobalScoped(broker));
-    }
-
-    public static GlobalScoped createDefaultGlobalScoped(String broker) {
-        return new GlobalScoped(
-                broker,
-                2,
-                false,
+    public static Globals createDefaultGlobals() {
+        return new Globals(
+                Env.getString(EnvKeyMQBroker, Context.MqttBrokerDefault),
+                Env.getString(EnvKeyMQUsername, null),
+                Env.getString(EnvKeyMQPassword, null),
+                Env.getInt(EnvKeyMQQOS, 2),
+                Env.getBoolean(EnvKeyMQRetained, false),
                 true,
-                true,
+                Env.getBoolean(EnvKeyMQCleanSession, true),
                 3,
                 3,
                 5,
                 3,
-                60,
+                120,
                 true,
                 30,
                 1000 * 60 * 60 * 6);
     }
+
 }
