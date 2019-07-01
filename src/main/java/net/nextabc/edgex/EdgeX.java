@@ -46,7 +46,7 @@ public class EdgeX {
                 Env.getString(EnvKeyMQBroker, Context.MqttBrokerDefault),
                 Env.getString(EnvKeyMQUsername, null),
                 Env.getString(EnvKeyMQPassword, null),
-                Env.getInt(EnvKeyMQQOS, 2),
+                Env.getInt(EnvKeyMQQOS, 0),
                 Env.getBoolean(EnvKeyMQRetained, false),
                 true,
                 Env.getBoolean(EnvKeyMQCleanSession, true),
