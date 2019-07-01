@@ -71,7 +71,7 @@ final class DriverImpl implements Driver {
         for (int i = 0; i < globals.mqttMaxRetry; i++) {
             try {
                 this.mqttClient.connect(opts);
-                log.info("Mqtt客户端连接成功");
+                log.info("Mqtt客户端连接成功: " + clientId);
                 break;
             } catch (MqttException e) {
                 log.error("Mqtt客户端出错：", e);
