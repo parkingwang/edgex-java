@@ -14,6 +14,21 @@ public interface Driver extends LifeCycle {
     void process(MessageHandler handler);
 
     /**
+     * 发送节点状态报告消息
+     *
+     * @param stat 状态消息
+     */
+    void publishStat(Message stat);
+
+    /**
+     * 发送MQTT消息
+     *
+     * @param topic   MQTT完整Topic
+     * @param message 消息
+     */
+    void publish(String topic, Message message);
+
+    /**
      * 发起一个消息请求，并获取响应消息。
      *
      * @param endpointAddress 　目标Endpoint的地址
@@ -28,10 +43,16 @@ public interface Driver extends LifeCycle {
 
     final class Options {
 
+        final int sendStatIntervalSec;
         final String nodeName;
         final String[] topics;
 
         public Options(String nodeName, String[] topics) {
+            this(60, nodeName, topics);
+        }
+
+        public Options(int sendStatIntervalSec, String nodeName, String[] topics) {
+            this.sendStatIntervalSec = sendStatIntervalSec;
             this.nodeName = nodeName;
             this.topics = topics;
         }

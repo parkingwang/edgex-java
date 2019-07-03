@@ -10,15 +10,14 @@ final public class Topics {
 
     private static final Logger log = Logger.getLogger(Topics.class);
 
-    private static final String tDevicesInspect = "$EDGEX/DEVICES/INSPECT";
-    private static final String tDevicesOffline = "$EDGEX/DEVICES/OFFLINE/%s/%s";
-    private static final String tDevicesAlive = "$EDGEX/DEVICES/ALIVE/%s/%s";
-    private static final String tTrigger = "$EDGEX/EVENTS/${user-topic}";
+    private static final String tNodesInspect = "$EDGEX/DEVICES/INSPECT";
+    private static final String tNodesStat = "$EDGEX/devices/stats/%s";
+    private static final String tNodesOffline = "$EDGEX/DEVICES/OFFLINE/%s/%s";
+    private static final String tNodesEvent = "$EDGEX/EVENTS/${user-topic}";
 
-    public static final String TopicDeviceInspect = "$EDGEX/DEVICES/INSPECT/#";
-    public static final String TopicDeviceOffline = "$EDGEX/DEVICES/OFFLINE/#";
-    public static final String TopicDeviceALIVE = "$EDGEX/DEVICES/ALIVE/#";
-    public static final String TopicDeviceEvents = "$EDGEX/EVENTS/#";
+    public static final String TopicNodesInspect = "$EDGEX/DEVICES/INSPECT/#";
+    public static final String TopicNodesOffline = "$EDGEX/DEVICES/OFFLINE/#";
+    public static final String TopicNodesEvent = "$EDGEX/EVENTS/#";
 
     private Topics() {
     }
@@ -34,11 +33,15 @@ final public class Topics {
         if (topic.startsWith("/")) {
             log.fatal("Topic MUST NOT starts with '/', was: " + topic);
         }
-        return tTrigger.replace("${user-topic}", topic);
+        return tNodesEvent.replace("${user-topic}", topic);
     }
 
     static String topicOfOffline(String typeName, String name) {
-        return String.format(tDevicesOffline, typeName, name);
+        return String.format(tNodesOffline, typeName, name);
+    }
+
+    static String topicOfStat(String nodeName) {
+        return String.format(tNodesStat, nodeName);
     }
 
     static boolean isTopLevelTopic(String topic) {
