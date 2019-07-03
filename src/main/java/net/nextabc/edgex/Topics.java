@@ -11,7 +11,7 @@ final public class Topics {
     private static final Logger log = Logger.getLogger(Topics.class);
 
     private static final String tNodesInspect = "$EDGEX/DEVICES/INSPECT";
-    private static final String tNodesStat = "$EDGEX/devices/stats/%s";
+    private static final String tNodesStat = "$EDGEX/DEVICES/stats/%s";
     private static final String tNodesOffline = "$EDGEX/DEVICES/OFFLINE/%s/%s";
     private static final String tNodesEvent = "$EDGEX/EVENTS/${user-topic}";
 
