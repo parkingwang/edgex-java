@@ -8,7 +8,7 @@ import org.apache.log4j.Logger;
  */
 public interface Message {
 
-    byte FRAME_VAR_BITS = (byte) 0xED;
+    byte FRAME_PROTO = (byte) 0xED;
     byte FRAME_HEADER_SIZE = 2;
     byte FRAME_NAME_MAX_SIZE = Byte.MAX_VALUE;
 
@@ -50,11 +50,11 @@ public interface Message {
     ////
 
     final class Header {
-        public final byte varBits;
+        public final byte proto;
         public final byte nameLen;
 
-        private Header(byte varBits, byte nameLen) {
-            this.varBits = varBits;
+        private Header(byte proto, byte nameLen) {
+            this.proto = proto;
             this.nameLen = nameLen;
         }
     }
@@ -63,34 +63,33 @@ public interface Message {
 
     final class Impl implements Message {
 
-        private final byte[] head;
+        private final byte[] header;
         private final byte[] name;
         private final byte[] body;
 
-        private Impl(byte[] head, byte[] name, byte[] body) {
-            this.head = head;
+        private Impl(byte[] header, byte[] name, byte[] body) {
+            this.header = header;
             this.name = name;
             this.body = body;
         }
 
         @Override
         public byte[] getFrames() {
-            final byte[] out = new byte[head.length + name.length + body.length];
+            final byte[] out = new byte[header.length + name.length + body.length];
             int offset = 0;
-            System.arraycopy(head, 0, out, offset, head.length);
-            offset += head.length;
+            System.arraycopy(header, 0, out, offset, header.length);
+            offset += header.length;
             System.arraycopy(name, 0, out, offset, name.length);
             offset += name.length;
             System.arraycopy(body, 0, out, offset, body.length);
             return out;
-
         }
 
         @Override
         public Header header() {
             return new Header(
-                    this.head[0],
-                    this.head[1]
+                    this.header[0],
+                    this.header[1]
             );
         }
 
@@ -135,7 +134,7 @@ public interface Message {
             Logger.getLogger("MessageBuilder").fatal("Name len too large: " + name.length);
         }
         return new Impl(new byte[]{
-                FRAME_VAR_BITS,
+                FRAME_PROTO,
                 (byte) name.length,
         }, name, body);
     }
@@ -149,7 +148,7 @@ public interface Message {
     static Message parse(byte[] data) {
         int offset = 0;
 
-        // head
+        // header
         final byte[] head = new byte[FRAME_HEADER_SIZE];
         System.arraycopy(data, offset, head, 0, head.length);
         final Header header = new Header(
