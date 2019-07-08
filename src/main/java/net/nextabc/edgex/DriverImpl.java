@@ -59,20 +59,13 @@ final class DriverImpl implements Driver {
 
     @Override
     public void publishStat(Message stat) {
-        this.publish(Topics.topicOfStat(this.options.nodeName), stat);
+        // Stat消息参数：QoS 0，not retained
+        this.publishMQTT(Topics.topicOfStat(this.options.nodeName), stat, 0, false);
     }
 
     @Override
     public void publish(String mqttTopic, Message msg) {
-        final MqttClient cli = Objects.requireNonNull(this.mqttClient, "Mqtt客户端尚未启动");
-        try {
-            cli.publish(mqttTopic,
-                    msg.getFrames(),
-                    this.globals.mqttQoS,
-                    this.globals.mqttRetained);
-        } catch (MqttException e) {
-            log.error("发送MQTT消息出错", e);
-        }
+        this.publishMQTT(mqttTopic, msg, this.globals.mqttQoS, this.globals.mqttRetained);
     }
 
     @Override
@@ -141,9 +134,7 @@ final class DriverImpl implements Driver {
         this.statTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                DriverImpl.this.publishStat(
-                        Message.fromString(options.nodeName, stats.toJSONString())
-                );
+                DriverImpl.this.publishStat(Message.fromString(options.nodeName, stats.toJSONString()));
             }
         }, 1000, this.options.sendStatIntervalSec * 1000);
     }
@@ -164,6 +155,18 @@ final class DriverImpl implements Driver {
         this.statTimer.cancel();
         this.statTimer.purge();
 
+    }
+
+    private void publishMQTT(String mqttTopic, Message msg, int qos, boolean retained) {
+        final MqttClient cli = Objects.requireNonNull(this.mqttClient, "Mqtt客户端尚未启动");
+        try {
+            cli.publish(mqttTopic,
+                    msg.getFrames(),
+                    qos,
+                    retained);
+        } catch (MqttException e) {
+            log.error("发送MQTT消息出错", e);
+        }
     }
 
     ////
