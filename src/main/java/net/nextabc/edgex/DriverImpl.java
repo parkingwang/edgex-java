@@ -81,6 +81,11 @@ final class DriverImpl implements Driver {
     }
 
     @Override
+    public Message hello(String endpointAddress, int timeoutSec) throws Exception {
+        return this.executor.execute(endpointAddress, Message.fromString(this.options.nodeName, "HELLO"), timeoutSec);
+    }
+
+    @Override
     public void startup() {
         this.stats.up();
         final String clientId = "EX-Driver-" + this.options.nodeName;
