@@ -10,14 +10,14 @@ final public class Topics {
 
     private static final Logger log = Logger.getLogger(Topics.class);
 
-    private static final String tNodesInspect = "$EDGEX/DEVICES/INSPECT";
-    private static final String tNodesStat = "$EDGEX/DEVICES/stats/%s";
-    private static final String tNodesOffline = "$EDGEX/DEVICES/OFFLINE/%s/%s";
-    private static final String tNodesEvent = "$EDGEX/EVENTS/${user-topic}";
+    private static final String tNodesInspect = "$EdgeX/nodes/inspect";
+    private static final String tNodesStats = "$EdgeX/nodes/stats/%s";
+    private static final String tNodesOffline = "$EdgeX/nodes/offline/%s/%s";
+    private static final String tNodesEvent = "$EdgeX/events/${user-topic}";
 
-    public static final String TopicNodesInspect = "$EDGEX/DEVICES/INSPECT/#";
-    public static final String TopicNodesOffline = "$EDGEX/DEVICES/OFFLINE/#";
-    public static final String TopicNodesEvent = "$EDGEX/EVENTS/#";
+    public static final String TopicNodesInspect = "$EdgeX/nodes/inspect";
+    public static final String TopicNodesOffline = "$EdgeX/nodes/offline/#";
+    public static final String TopicNodesEvent = "$EdgeX/events/#";
 
     private Topics() {
     }
@@ -41,10 +41,10 @@ final public class Topics {
     }
 
     static String topicOfStat(String nodeName) {
-        return String.format(tNodesStat, nodeName);
+        return String.format(tNodesStats, nodeName);
     }
 
     static boolean isTopLevelTopic(String topic) {
-        return topic.startsWith("$EDGEX/EVENTS/") || topic.startsWith("$EDGEX/DEVICES/");
+        return topic.startsWith("$EdgeX/events/") || topic.startsWith("$EdgeX/nodes/");
     }
 }
