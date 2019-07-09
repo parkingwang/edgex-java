@@ -32,7 +32,7 @@ public class ExecutorImpl implements Executor {
         final ManagedChannel channel = getChannel(endpointAddress);
         final ExecuteGrpc.ExecuteFutureStub stub = ExecuteGrpc.newFutureStub(channel);
         final Data req = Data.newBuilder()
-                .setFrames(ByteString.copyFrom(in.getFrames()))
+                .setFrames(ByteString.copyFrom(in.bytes()))
                 .build();
         return Message.parse(stub
                 .execute(req)

@@ -10,6 +10,7 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author 陈永佳 (yoojiachen@gmail.com)
@@ -27,6 +28,7 @@ final class DriverImpl implements Driver {
 
     private final String[] mqttTopics;
     private final Stats stats = new Stats();
+    private final AtomicInteger sequenceId = new AtomicInteger(0);
 
     private MqttClient mqttClient;
     private MessageHandler handler;
@@ -75,7 +77,20 @@ final class DriverImpl implements Driver {
 
     @Override
     public Message hello(String endpointAddress, int timeoutSec) throws Exception {
-        return this.executor.execute(endpointAddress, Message.fromString(this.options.nodeName, "HELLO"), timeoutSec);
+        return this.executor.execute(
+                endpointAddress,
+                Message.create(this.options.nodeName, new byte[0], Message.FrameVarPing, nextSequenceId()),
+                timeoutSec);
+    }
+
+    @Override
+    public int nextSequenceId() {
+        return sequenceId.getAndSet((sequenceId.get() + 1) % Integer.MAX_VALUE);
+    }
+
+    @Override
+    public Message nextMessage(String sourceName, byte[] body) {
+        return Message.fromBytes(sourceName, body, nextSequenceId());
     }
 
     @Override
@@ -89,7 +104,7 @@ final class DriverImpl implements Driver {
             log.fatal("Mqtt客户端错误", e);
         }
         final MqttConnectOptions opts = new MqttConnectOptions();
-        opts.setWill(Topics.topicOfOffline("Driver", this.options.nodeName), "offline".getBytes(), 1, true);
+        opts.setWill(Topics.topicOfOffline("Driver", this.options.nodeName), "offline".getBytes(), 1, false);
         Mqtt.setup(this.globals, opts);
         for (int i = 0; i < globals.mqttMaxRetry; i++) {
             try {
@@ -134,7 +149,7 @@ final class DriverImpl implements Driver {
         this.statTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                DriverImpl.this.publishStat(Message.fromString(options.nodeName, stats.toJSONString()));
+                DriverImpl.this.publishStat(nextMessage(options.nodeName, stats.toJSONString().getBytes()));
             }
         }, 1000, this.options.sendStatIntervalSec * 1000);
     }
@@ -161,7 +176,7 @@ final class DriverImpl implements Driver {
         final MqttClient cli = Objects.requireNonNull(this.mqttClient, "Mqtt客户端尚未启动");
         try {
             cli.publish(mqttTopic,
-                    msg.getFrames(),
+                    msg.bytes(),
                     qos,
                     retained);
         } catch (MqttException e) {

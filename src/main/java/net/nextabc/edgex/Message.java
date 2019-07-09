@@ -1,6 +1,6 @@
 package net.nextabc.edgex;
 
-import org.apache.log4j.Logger;
+import java.io.*;
 
 /**
  * @author 陈永佳 (yoojiachen@gmail.com)
@@ -8,16 +8,19 @@ import org.apache.log4j.Logger;
  */
 public interface Message {
 
-    byte FRAME_PROTO = (byte) 0xED;
-    byte FRAME_HEADER_SIZE = 2;
-    byte FRAME_NAME_MAX_SIZE = Byte.MAX_VALUE;
+    byte FrameMagic = (byte) 0xED; // Magic
+    byte FrameVersion = 0x01; // 版本
+    byte FrameEmpty = 0x00; // 分隔空帧
+    byte FrameVarData = (byte) 0xDA;
+    byte FrameVarPing = (byte) 0xD0;
+    byte FrameVarPong = (byte) 0xD1;
 
     /**
      * 返回消息全部字节
      *
      * @return 返回消息全部字节
      */
-    byte[] getFrames();
+    byte[] bytes();
 
     /**
      * 返回消息的Header
@@ -38,59 +41,68 @@ public interface Message {
      *
      * @return 返回消息体创建源组件名字
      */
-    byte[] name();
+    String sourceName();
 
     /**
-     * 返回Body消息体的大小
+     * 返回返回消息Id
      *
-     * @return 返回Body消息体的大小
+     * @return 返回消息Id
      */
-    int size();
+    int sequenceId();
 
     ////
 
     final class Header {
-        public final byte proto;
-        public final byte nameLen;
 
-        private Header(byte proto, byte nameLen) {
-            this.proto = proto;
-            this.nameLen = nameLen;
+        public final byte magic;
+        public final byte version;
+        public final byte controlVar;
+        public final int sequenceId;
+
+        public Header(byte magic, byte version, byte controlVar, int sequenceId) {
+            this.magic = magic;
+            this.version = version;
+            this.controlVar = controlVar;
+            this.sequenceId = sequenceId;
         }
     }
 
     ////
 
-    final class Impl implements Message {
+    final class message implements Message {
 
-        private final byte[] header;
-        private final byte[] name;
+        private final Header header;
+        private final String sourceName;
         private final byte[] body;
 
-        private Impl(byte[] header, byte[] name, byte[] body) {
+        private message(Header header, String sourceName, byte[] body) {
             this.header = header;
-            this.name = name;
+            this.sourceName = sourceName;
             this.body = body;
         }
 
         @Override
-        public byte[] getFrames() {
-            final byte[] out = new byte[header.length + name.length + body.length];
-            int offset = 0;
-            System.arraycopy(header, 0, out, offset, header.length);
-            offset += header.length;
-            System.arraycopy(name, 0, out, offset, name.length);
-            offset += name.length;
-            System.arraycopy(body, 0, out, offset, body.length);
-            return out;
+        public byte[] bytes() {
+            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final DataOutputStream dos = new DataOutputStream(baos);
+            try {
+                dos.writeByte(header.magic);
+                dos.writeByte(header.version);
+                dos.writeByte(header.controlVar);
+                dos.writeInt(header.sequenceId);
+                dos.write(sourceName.getBytes());
+                dos.writeByte(FrameEmpty);
+                dos.write(body);
+                dos.flush();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return baos.toByteArray();
         }
 
         @Override
         public Header header() {
-            return new Header(
-                    this.header[0],
-                    this.header[1]
-            );
+            return header;
         }
 
         @Override
@@ -99,14 +111,15 @@ public interface Message {
         }
 
         @Override
-        public byte[] name() {
-            return this.name;
+        public String sourceName() {
+            return this.sourceName;
         }
 
         @Override
-        public int size() {
-            return body.length;
+        public int sequenceId() {
+            return this.header.sequenceId;
         }
+
     }
 
     ////
@@ -118,25 +131,36 @@ public interface Message {
      * @param body Body
      * @return Message
      */
-    static Message fromString(String name, String body) {
-        return fromBytes(name.getBytes(), body.getBytes());
+    static Message fromString(String name, String body, int seqId) {
+        return fromBytes(name, body.getBytes(), seqId);
     }
 
     /**
      * 根据字节数据，创建Message对象
      *
-     * @param name Name
-     * @param body Body
+     * @param sourceName Name
+     * @param body       Body
      * @return Message
      */
-    static Message fromBytes(byte[] name, byte[] body) {
-        if (name.length > FRAME_NAME_MAX_SIZE) {
-            Logger.getLogger("MessageBuilder").fatal("Name len too large: " + name.length);
-        }
-        return new Impl(new byte[]{
-                FRAME_PROTO,
-                (byte) name.length,
-        }, name, body);
+    static Message fromBytes(String sourceName, byte[] body, int seqId) {
+        return create(sourceName, body, FrameVarData, seqId);
+    }
+
+    /**
+     * 根据字节数据，创建Message对象
+     *
+     * @param sourceName SourceName
+     * @param body       Body
+     * @param ctrlVar    Control Var
+     * @param seqId      SequenceId
+     * @return Message
+     */
+    static Message create(String sourceName, byte[] body, byte ctrlVar, int seqId) {
+        return new message(new Header(
+                FrameMagic,
+                FrameVersion,
+                ctrlVar,
+                seqId), sourceName, body);
     }
 
     /**
@@ -146,26 +170,36 @@ public interface Message {
      * @return Message
      */
     static Message parse(byte[] data) {
-        int offset = 0;
+        final ByteArrayInputStream bais = new ByteArrayInputStream(data);
+        final DataInputStream dis = new DataInputStream(bais);
+        try {
+            final byte magic = dis.readByte();
+            final byte version = dis.readByte();
+            final byte vars = dis.readByte();
+            final int seqId = dis.readInt();
+            // header size: 7
+            final byte[] name = read0(data, 7, FrameEmpty, true);
+            final byte[] body = read0(data, 8 + name.length, FrameEmpty, false);
+            return new message(new Header(
+                    magic,
+                    version,
+                    vars,
+                    seqId
+            ), new String(name), body);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-        // header
-        final byte[] head = new byte[FRAME_HEADER_SIZE];
-        System.arraycopy(data, offset, head, 0, head.length);
-        final Header header = new Header(
-                head[0],
-                head[1]
-        );
-
-        // name
-        offset += head.length;
-        final byte[] name = new byte[header.nameLen];
-        System.arraycopy(data, offset, name, 0, name.length);
-
-        // body
-        offset += name.length;
-        final byte[] body = new byte[data.length - offset];
-        System.arraycopy(data, offset, body, 0, body.length);
-
-        return new Impl(head, name, body);
+    static byte[] read0(byte[] data, int offset, byte delimiter, boolean needDelimiter) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        for (int i = offset; i < data.length; i++) {
+            if (needDelimiter && data[i] == delimiter) {
+                break;
+            } else {
+                out.write(data[i]);
+            }
+        }
+        return out.toByteArray();
     }
 }

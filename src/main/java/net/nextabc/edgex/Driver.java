@@ -41,13 +41,29 @@ public interface Driver extends LifeCycle {
 
     /**
      * Hello 发起一个同步Hello消息，并获取响应消息。通常使用此函数来触发gRPC创建并预热两个节点之间的连接。
-     * 函数调用的是Execute函数，发送消息体为"HELLO"，返回消息为"WORLD"。
+     *
      * @param endpointAddress 目标Endpoint的地址
-     * @param timeoutSec 请求超时时间
+     * @param timeoutSec      请求超时时间
      * @return 响应消息，消息体内容为 WORLD
      * @throws Exception 如果过程中发生错误，返回错误消息
      */
     Message hello(String endpointAddress, int timeoutSec) throws Exception;
+
+    /**
+     * 返回消息流水号
+     *
+     * @return 消息流水号
+     */
+    int nextSequenceId();
+
+    /**
+     * 基于内部消息流水号，创建消息对象
+     *
+     * @param sourceName 源名称
+     * @param body       Body
+     * @return 消息对象
+     */
+    Message nextMessage(String sourceName, byte[] body);
 
     ////
 
