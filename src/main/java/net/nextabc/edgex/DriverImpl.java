@@ -7,9 +7,7 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
-import java.util.Objects;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -29,6 +27,8 @@ final class DriverImpl implements Driver {
     private final String[] mqttTopics;
     private final Stats stats = new Stats();
     private final AtomicInteger sequenceId = new AtomicInteger(0);
+    private final List<OnStartupListener> startupListeners = new ArrayList<>(0);
+    private final List<OnShutdownListener> shutdownListeners = new ArrayList<>(0);
 
     private MqttClient mqttClient;
     private MessageHandler handler;
@@ -94,7 +94,18 @@ final class DriverImpl implements Driver {
     }
 
     @Override
+    public void addStartupListener(OnStartupListener l) {
+        this.startupListeners.add(l);
+    }
+
+    @Override
+    public void addShutdownListener(OnShutdownListener l) {
+        this.shutdownListeners.add(l);
+    }
+
+    @Override
     public void startup() {
+        this.startupListeners.forEach(OnStartupListener::onBefore);
         this.stats.up();
         final String clientId = "EX-Driver-" + this.options.nodeName;
         final MemoryPersistence mp = new MemoryPersistence();
@@ -152,11 +163,13 @@ final class DriverImpl implements Driver {
                 DriverImpl.this.publishStat(nextMessage(options.nodeName, stats.toJSONString().getBytes()));
             }
         }, 1000, this.options.sendStatIntervalSec * 1000);
+
+        this.startupListeners.forEach(OnStartupListener::onAfter);
     }
 
     @Override
     public void shutdown() {
-
+        this.shutdownListeners.forEach(OnShutdownListener::onBefore);
         for (String t : this.mqttTopics) {
             log.debug("取消监听事件[TRIGGER]: " + t);
         }
@@ -169,7 +182,7 @@ final class DriverImpl implements Driver {
 
         this.statTimer.cancel();
         this.statTimer.purge();
-
+        this.shutdownListeners.forEach(OnShutdownListener::onAfter);
     }
 
     private void publishMQTT(String mqttTopic, Message msg, int qos, boolean retained) {

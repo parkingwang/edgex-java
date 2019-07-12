@@ -65,6 +65,20 @@ public interface Driver extends LifeCycle {
      */
     Message nextMessage(String sourceName, byte[] body);
 
+    /**
+     * 添加Startup监听接口
+     *
+     * @param l 监听接口
+     */
+    void addStartupListener(OnStartupListener l);
+
+    /**
+     * 添加Shutdown监听接口
+     *
+     * @param l 监听接口
+     */
+    void addShutdownListener(OnShutdownListener l);
+
     ////
 
     final class Options {
