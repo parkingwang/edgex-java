@@ -29,7 +29,7 @@ repositories {
 
 
 group 'net.nextabc'
-version '1.3.0b'
+version '1.3.0c'
 description = 'Edge X for java'
 
 

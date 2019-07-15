@@ -70,14 +70,14 @@ public interface Driver extends LifeCycle {
      *
      * @param l 监听接口
      */
-    void addStartupListener(OnStartupListener l);
+    void addStartupListener(OnStartupListener<Driver> l);
 
     /**
      * 添加Shutdown监听接口
      *
      * @param l 监听接口
      */
-    void addShutdownListener(OnShutdownListener l);
+    void addShutdownListener(OnShutdownListener<Driver> l);
 
     ////
 
