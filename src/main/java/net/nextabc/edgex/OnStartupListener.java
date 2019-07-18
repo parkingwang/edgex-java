@@ -8,6 +8,7 @@ package net.nextabc.edgex;
 public interface OnStartupListener<T> {
     /**
      * 在Startup函数调用后，开始时，调用此方法
+     * @param host Host
      */
     default void onBefore(T host) {
         // Startup 默认不实现 Before 方法
@@ -15,6 +16,7 @@ public interface OnStartupListener<T> {
 
     /**
      * 在Startup函数调用后，完成前，调用此方法
+     * @param host Host
      */
     void onAfter(T host);
 }

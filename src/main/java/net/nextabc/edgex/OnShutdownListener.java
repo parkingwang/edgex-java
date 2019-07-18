@@ -8,11 +8,13 @@ package net.nextabc.edgex;
 public interface OnShutdownListener<T> {
     /**
      * 在Shutdown函数调用后，开始时，调用此方法
+     * @param host Host
      */
     void onBefore(T host);
 
     /**
      * 在Shutdown函数调用后，完成前，调用此方法
+     * @param host Host
      */
     default void onAfter(T host) {
         // Shutdown 默认不实现 After方法

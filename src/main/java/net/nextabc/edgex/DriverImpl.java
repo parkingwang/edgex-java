@@ -79,7 +79,8 @@ final class DriverImpl implements Driver {
     public Message hello(String endpointAddress, int timeoutSec) throws Exception {
         return this.executor.execute(
                 endpointAddress,
-                Message.create(this.options.nodeName, new byte[0], Message.FrameVarPing, nextSequenceId()),
+                Message.create(Message.makeSourceNodeId(this.options.nodeName, this.options.nodeName),
+                        new byte[0], Message.FrameVarPing, nextSequenceId()),
                 timeoutSec);
     }
 
@@ -89,8 +90,8 @@ final class DriverImpl implements Driver {
     }
 
     @Override
-    public Message nextMessage(String sourceName, byte[] body) {
-        return Message.fromBytes(sourceName, body, nextSequenceId());
+    public Message nextMessage(String virtualNodeId, byte[] body) {
+        return Message.fromBytes(this.options.nodeName, virtualNodeId, body, nextSequenceId());
     }
 
     @Override

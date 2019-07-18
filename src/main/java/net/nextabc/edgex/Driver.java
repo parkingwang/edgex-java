@@ -59,11 +59,11 @@ public interface Driver extends LifeCycle {
     /**
      * 基于内部消息流水号，创建消息对象
      *
-     * @param sourceName 源名称
-     * @param body       Body
+     * @param virtualNodeId 虚拟虚名ID
+     * @param body          Body
      * @return 消息对象
      */
-    Message nextMessage(String sourceName, byte[] body);
+    Message nextMessage(String virtualNodeId, byte[] body);
 
     /**
      * 添加Startup监听接口
