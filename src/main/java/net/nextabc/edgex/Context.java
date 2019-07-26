@@ -65,6 +65,7 @@ public interface Context {
     /**
      * 加载指定文件名的配置文件
      *
+     * @param fileName 文件名
      * @return 非空配置文件对象
      */
     Map<String, Object> loadConfigByName(String fileName);
