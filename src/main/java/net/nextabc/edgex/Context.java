@@ -25,7 +25,7 @@ public interface Context {
     String MqttBrokerDefault = "tcp://mqtt-broker.edgex.io:1883";
 
     String DefaultConfName = "application.toml";
-    String DefaultConfDir = "/etc/edgex/application.toml";
+    String DefaultConfDir = "/etc/edgex/";
 
     /**
      * 初始化Context

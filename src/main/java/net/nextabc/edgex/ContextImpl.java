@@ -135,16 +135,14 @@ final class ContextImpl implements Context {
 
     @Override
     public Map<String, Object> loadConfigByName(String fileName) {
-        final File file = Stream.of(
-                fileName,
-                DefaultConfDir + fileName,
-                System.getenv(EnvKeyConfig))
+        final File file = Stream.of(fileName, DefaultConfDir + fileName, System.getenv(EnvKeyConfig))
+                .filter(f -> f == null || f.isEmpty())
                 .map(File::new)
                 .filter(File::exists)
                 .findFirst()
                 .orElse(null);
         if (null == file) {
-            log.fatal("未设置任何文件");
+            log.fatal("未找到任何配置文件");
             return Collections.emptyMap();
         } else {
             log.info("加载配置文件：" + file);
