@@ -136,7 +136,7 @@ final class ContextImpl implements Context {
     @Override
     public Map<String, Object> loadConfigByName(String fileName) {
         final File file = Stream.of(fileName, DefaultConfDir + fileName, System.getenv(EnvKeyConfig))
-                .filter(f -> f == null || f.isEmpty())
+                .filter(f -> f != null && !f.isEmpty())
                 .map(File::new)
                 .filter(File::exists)
                 .findFirst()
