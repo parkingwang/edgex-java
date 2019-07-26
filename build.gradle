@@ -24,12 +24,14 @@ sourceCompatibility = JavaVersion.VERSION_1_8
 repositories {
     maven { url "https://maven.aliyun.com/repository/central" }
     maven { url "https://maven.aliyun.com/repository/jcenter" }
+    maven { url "https://dl.bintray.com/nextabc/maven" }
+    maven { url "https://dl.bintray.com/yoojia/maven" }
     jcenter()
 }
 
 
 group 'net.nextabc'
-version '1.4.0-a0'
+version '1.4.1'
 description = 'Edge X for java'
 
 
@@ -53,6 +55,12 @@ dependencies {
     // ProtoBuf
     compile 'com.google.protobuf:protobuf-java:3.7.1'
     compile 'javax.annotation:javax.annotation-api:1.3.2'
+    // Kit
+    compile 'net.nextabc:toolkit:1.0.0'
+    // Lombok, 注意，需要IDE插件支持
+    compileOnly 'org.projectlombok:lombok:1.18.8'
+    annotationProcessor 'org.projectlombok:lombok:1.18.8'
+    // Test
     testCompile 'junit:junit:4.12'
 }
 

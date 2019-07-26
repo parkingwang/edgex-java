@@ -7,6 +7,13 @@ package net.nextabc.edgex;
 public interface Driver extends LifeCycle {
 
     /**
+     * 返回节点名称
+     *
+     * @return 节点名称
+     */
+    String nodeName();
+
+    /**
      * 处理消息
      *
      * @param handler 处理函数
@@ -84,16 +91,14 @@ public interface Driver extends LifeCycle {
     final class Options {
 
         final int sendStatIntervalSec;
-        final String nodeName;
         final String[] topics;
 
-        public Options(String nodeName, String[] topics) {
-            this(60, nodeName, topics);
+        public Options(String[] topics) {
+            this(60, topics);
         }
 
-        public Options(int sendStatIntervalSec, String nodeName, String[] topics) {
+        public Options(int sendStatIntervalSec, String[] topics) {
             this.sendStatIntervalSec = sendStatIntervalSec;
-            this.nodeName = nodeName;
             this.topics = topics;
         }
     }

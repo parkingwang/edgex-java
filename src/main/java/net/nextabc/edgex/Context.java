@@ -12,27 +12,62 @@ import java.util.concurrent.TimeoutException;
  */
 public interface Context {
 
-    String EnvKeyMQBroker       = "EDGEX_MQTT_BROKER";
-    String EnvKeyMQUsername     = "EDGEX_MQTT_USERNAME";
-    String EnvKeyMQPassword     = "EDGEX_MQTT_PASSWORD";
-    String EnvKeyMQQOS          = "EDGEX_MQTT_QOS";
-    String EnvKeyMQRetained     = "EDGEX_MQTT_RETAINED";
+    String EnvKeyMQBroker = "EDGEX_MQTT_BROKER";
+    String EnvKeyMQUsername = "EDGEX_MQTT_USERNAME";
+    String EnvKeyMQPassword = "EDGEX_MQTT_PASSWORD";
+    String EnvKeyMQQOS = "EDGEX_MQTT_QOS";
+    String EnvKeyMQRetained = "EDGEX_MQTT_RETAINED";
     String EnvKeyMQCleanSession = "EDGEX_MQTT_CLEAN_SESSION";
-    String EnvKeyConfig         = "EDGEX_CONFIG";
-    String EnvKeyLogVerbose     = "EDGEX_LOG_VERBOSE";
-    String EnvKeyGrpcAddress    = "EDGEX_GRPC_ADDRESS";
+    String EnvKeyConfig = "EDGEX_CONFIG";
+    String EnvKeyLogVerbose = "EDGEX_LOG_VERBOSE";
+    String EnvKeyGrpcAddress = "EDGEX_GRPC_ADDRESS";
 
     String MqttBrokerDefault = "tcp://mqtt-broker.edgex.io:1883";
 
     String DefaultConfName = "application.toml";
-    String DefaultConfFile = "/etc/edgex/application.toml";
+    String DefaultConfDir = "/etc/edgex/application.toml";
+
+    /**
+     * 初始化Context
+     *
+     * @param nodeName Node Name
+     */
+    void initial(String nodeName);
+
+    /**
+     * 使用默认配置结构来初始化Context
+     *
+     * @param config 配置
+     */
+    void initialWithConfig(Map<String, Object> config);
+
+    /**
+     * 销毁Context
+     */
+    void destroy();
+
+    /**
+     * 返回节点名称
+     *
+     * @return 节点名称
+     */
+    String nodeName();
 
     /**
      * 加载配置文件
      *
      * @return 非空配置文件对象
      */
-    Map<String, Object> loadConfig();
+    default Map<String, Object> loadConfig() {
+        return loadConfigByName(DefaultConfName);
+    }
+
+    /**
+     * 加载指定文件名的配置文件
+     *
+     * @return 非空配置文件对象
+     */
+    Map<String, Object> loadConfigByName(String fileName);
 
     /**
      * 创建Driver
@@ -44,6 +79,7 @@ public interface Context {
 
     /**
      * 创建Executor
+     *
      * @return Executor对象
      */
     Executor newExecutor();

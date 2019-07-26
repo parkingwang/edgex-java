@@ -1,14 +1,13 @@
 package net.nextabc.edgex;
 
-import org.apache.log4j.Logger;
+import lombok.extern.log4j.Log4j;
 
 /**
  * @author 陈永佳 (yoojiachen@gmail.com)
  * @version 0.0.1
  */
+@Log4j
 final public class Topics {
-
-    private static final Logger log = Logger.getLogger(Topics.class);
 
     private static final String tNodesInspect = "$EdgeX/nodes/inspect";
     private static final String tNodesStats = "$EdgeX/nodes/stats/%s";

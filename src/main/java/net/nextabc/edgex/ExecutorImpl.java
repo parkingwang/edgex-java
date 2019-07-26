@@ -3,16 +3,15 @@ package net.nextabc.edgex;
 import com.google.protobuf.ByteString;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import org.apache.log4j.Logger;
+import lombok.extern.log4j.Log4j;
 
 import java.util.concurrent.TimeUnit;
 
 /**
  * @author 陈哈哈 (yoojiachen@gmail.com)
  */
+@Log4j
 public class ExecutorImpl implements Executor {
-
-    public static final Logger log = Logger.getLogger(ExecutorImpl.class);
 
     private static final ExpiringMap<String, ManagedChannel> CACHE_CHANNELS = new ExpiringMap<>(ManagedChannel::shutdown);
 
@@ -20,10 +19,14 @@ public class ExecutorImpl implements Executor {
         Runtime.getRuntime().addShutdownHook(new Thread(CACHE_CHANNELS::clear));
     }
 
-    private final Globals globals;
+    private final boolean rpcKeepAlive;
+    private final int rpcKeepAliveTimeoutSec;
+    private final int rpcConnectionCacheTTL;
 
-    public ExecutorImpl(Globals globals) {
-        this.globals = globals;
+    ExecutorImpl(Globals globals) {
+        this.rpcKeepAlive = globals.isGrpcKeepAlive();
+        this.rpcKeepAliveTimeoutSec = globals.getGrpcKeepAliveTimeoutSec();
+        this.rpcConnectionCacheTTL = globals.getGrpcConnectionCacheTTL();
     }
 
     @Override
@@ -49,12 +52,12 @@ public class ExecutorImpl implements Executor {
         final ManagedChannelBuilder builder = ManagedChannelBuilder
                 .forTarget(endpointAddress)
                 .usePlaintext();
-        if (this.globals.grpcKeepAlive) {
+        if (rpcKeepAlive) {
             builder.keepAliveWithoutCalls(true)
-                    .keepAliveTimeout(this.globals.grpcKeepAliveTimeoutSec, TimeUnit.SECONDS);
+                    .keepAliveTimeout(rpcKeepAliveTimeoutSec, TimeUnit.SECONDS);
         }
         final ManagedChannel newChannel = builder.build();
-        CACHE_CHANNELS.put(endpointAddress, newChannel, this.globals.grpcConnectionCacheTTL);
+        CACHE_CHANNELS.put(endpointAddress, newChannel, rpcConnectionCacheTTL);
         return newChannel;
     }
 }

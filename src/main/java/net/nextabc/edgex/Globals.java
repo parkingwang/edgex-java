@@ -1,29 +1,34 @@
 package net.nextabc.edgex;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * 全局配置
  *
  * @author 陈永佳 (yoojiachen@gmail.com)
  * @version 0.0.1
  */
+@Getter
+@Setter
 public class Globals {
 
-    final String mqttBroker;
-    final String mqttUsername;
-    final String mqttPassword;
-    final int mqttQoS;
-    final boolean mqttRetained;
-    final boolean mqttAutoReconnect;
-    final boolean mqttClearSession;
-    final int mqttKeepAlive;
-    final int mqttPingTimeout;
-    final int mqttConnectTimeout;
-    final int mqttReconnectInterval;
-    final int mqttMaxRetry;
+    private String mqttBroker;
+    private String mqttUsername;
+    private String mqttPassword;
+    private int mqttQoS;
+    private boolean mqttRetained;
+    private boolean mqttAutoReconnect;
+    private boolean mqttClearSession;
+    private int mqttKeepAlive;
+    private int mqttPingTimeout;
+    private int mqttConnectTimeout;
+    private int mqttReconnectInterval;
+    private int mqttMaxRetry;
 
-    final boolean grpcKeepAlive;
-    final int grpcKeepAliveTimeoutSec;
-    final int grpcConnectionCacheTTL;
+    private boolean grpcKeepAlive;
+    private int grpcKeepAliveTimeoutSec;
+    private int grpcConnectionCacheTTL;
 
     public Globals(String broker, String mqttUsername, String mqttPassword, int qos, boolean retained,
                    boolean autoReconnect, boolean clearSession, int keepAlive, int pingTimeout, int connectTimeout, int reconnectInterval, int maxRetry,

@@ -3,9 +3,7 @@ package net.nextabc.edgex;
 import org.apache.log4j.Logger;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
 import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,10 +28,13 @@ final class DriverImpl implements Driver {
     private final List<OnStartupListener<Driver>> startupListeners = new ArrayList<>(0);
     private final List<OnShutdownListener<Driver>> shutdownListeners = new ArrayList<>(0);
 
-    private MqttClient mqttClient;
+    private final MqttClient mqttClientRef;
+    private final String nodeName;
     private MessageHandler handler;
 
-    DriverImpl(Globals globals, Options options) {
+    DriverImpl(String nodeName, MqttClient mqttClient, Globals globals, Options options) {
+        this.nodeName = nodeName;
+        this.mqttClientRef = mqttClient;
         this.globals = Objects.requireNonNull(globals);
         this.options = Objects.requireNonNull(options);
         this.executor = new ExecutorImpl(this.globals);
@@ -55,6 +56,11 @@ final class DriverImpl implements Driver {
     }
 
     @Override
+    public String nodeName() {
+        return nodeName;
+    }
+
+    @Override
     public void process(MessageHandler handler) {
         this.handler = Objects.requireNonNull(handler);
     }
@@ -62,12 +68,12 @@ final class DriverImpl implements Driver {
     @Override
     public void publishStat(Message stat) {
         // Stat消息参数：QoS 0，not retained
-        this.publishMQTT(Topics.topicOfStat(this.options.nodeName), stat, 0, false);
+        this.publishMQTT(Topics.topicOfStat(this.nodeName), stat, 0, false);
     }
 
     @Override
     public void publish(String mqttTopic, Message msg) {
-        this.publishMQTT(mqttTopic, msg, this.globals.mqttQoS, this.globals.mqttRetained);
+        this.publishMQTT(mqttTopic, msg, this.globals.getMqttQoS(), this.globals.isMqttRetained());
     }
 
     @Override
@@ -79,7 +85,7 @@ final class DriverImpl implements Driver {
     public Message hello(String endpointAddress, int timeoutSec) throws Exception {
         return this.executor.execute(
                 endpointAddress,
-                Message.create(Message.makeSourceNodeId(this.options.nodeName, this.options.nodeName),
+                Message.create(Message.makeSourceNodeId(this.nodeName, this.nodeName),
                         new byte[0], Message.FrameVarPing, nextSequenceId()),
                 timeoutSec);
     }
@@ -91,7 +97,7 @@ final class DriverImpl implements Driver {
 
     @Override
     public Message nextMessage(String virtualNodeId, byte[] body) {
-        return Message.fromBytes(this.options.nodeName, virtualNodeId, body, nextSequenceId());
+        return Message.fromBytes(this.nodeName, virtualNodeId, body, nextSequenceId());
     }
 
     @Override
@@ -108,35 +114,6 @@ final class DriverImpl implements Driver {
     public void startup() {
         this.startupListeners.forEach(l -> l.onBefore(this));
         this.stats.up();
-        final String clientId = "EX-Driver-" + this.options.nodeName;
-        final MemoryPersistence mp = new MemoryPersistence();
-        try {
-            this.mqttClient = new MqttClient(this.globals.mqttBroker, clientId, mp);
-        } catch (MqttException e) {
-            log.fatal("Mqtt客户端错误", e);
-        }
-        final MqttConnectOptions opts = new MqttConnectOptions();
-        opts.setWill(Topics.topicOfOffline("Driver", this.options.nodeName), "offline".getBytes(), 1, false);
-        Mqtt.setup(this.globals, opts);
-        for (int i = 0; i < globals.mqttMaxRetry; i++) {
-            try {
-                this.mqttClient.connect(opts);
-                break;
-            } catch (MqttException e) {
-                log.error("Mqtt客户端出错：", e);
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ex) {
-                    break;
-                }
-            }
-        }
-
-        if (!this.mqttClient.isConnected()) {
-            log.fatal("Mqtt客户端无法连接Broker");
-        } else {
-            log.info("Mqtt客户端连接成功: " + clientId);
-        }
 
         // 监听所有Trigger的UserTopic
         final IMqttMessageListener listener = (topic, message) -> {
@@ -149,9 +126,10 @@ final class DriverImpl implements Driver {
             }
         };
         try {
+            final int qos = this.globals.getMqttQoS();
             for (String topic : this.mqttTopics) {
-                log.debug("开启监听事件: QOS= " + this.globals.mqttQoS + ", Topic= " + topic);
-                this.mqttClient.subscribe(topic, this.globals.mqttQoS, listener);
+                log.debug("开启监听事件: QOS= " + qos + ", Topic= " + topic);
+                this.mqttClientRef.subscribe(topic, qos, listener);
             }
         } catch (MqttException e) {
             log.fatal("Mqtt客户端订阅事件出错：", e);
@@ -161,7 +139,7 @@ final class DriverImpl implements Driver {
         this.statTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                DriverImpl.this.publishStat(nextMessage(options.nodeName, stats.toJSONString().getBytes()));
+                DriverImpl.this.publishStat(nextMessage(nodeName, stats.toJSONString().getBytes()));
             }
         }, 1000, this.options.sendStatIntervalSec * 1000);
 
@@ -176,7 +154,7 @@ final class DriverImpl implements Driver {
         }
 
         try {
-            this.mqttClient.unsubscribe(this.mqttTopics);
+            this.mqttClientRef.unsubscribe(this.mqttTopics);
         } catch (MqttException e) {
             log.fatal("Mqtt客户端出错：", e);
         }
@@ -187,7 +165,7 @@ final class DriverImpl implements Driver {
     }
 
     private void publishMQTT(String mqttTopic, Message msg, int qos, boolean retained) {
-        final MqttClient cli = Objects.requireNonNull(this.mqttClient, "Mqtt客户端尚未启动");
+        final MqttClient cli = Objects.requireNonNull(this.mqttClientRef, "Mqtt客户端尚未启动");
         try {
             cli.publish(mqttTopic,
                     msg.bytes(),

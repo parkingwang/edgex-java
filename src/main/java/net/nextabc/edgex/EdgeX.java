@@ -1,6 +1,6 @@
 package net.nextabc.edgex;
 
-import org.apache.log4j.Logger;
+import lombok.extern.log4j.Log4j;
 
 import static net.nextabc.edgex.Context.*;
 
@@ -8,9 +8,8 @@ import static net.nextabc.edgex.Context.*;
  * @author 陈永佳 (yoojiachen@gmail.com)
  * @version 0.0.1
  */
+@Log4j
 public class EdgeX {
-
-    private static final Logger log = Logger.getLogger(EdgeX.class);
 
     private EdgeX() {
     }
@@ -23,12 +22,13 @@ public class EdgeX {
     public static void run(Application application) {
         final Context ctx = createContext();
         try {
-            log.info("启动Service");
+            log.info("启动EdgeX-App");
             application.run(ctx);
         } catch (Exception e) {
-            log.error("Service出错", e);
+            log.error("EdgeX-App出错", e);
         } finally {
-            log.info("停止Service");
+            ctx.destroy();
+            log.info("停止EdgeX-App");
         }
     }
 
