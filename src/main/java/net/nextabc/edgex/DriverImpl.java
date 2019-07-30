@@ -30,7 +30,7 @@ final class DriverImpl implements Driver {
 
     private final MqttClient mqttClientRef;
     private final String nodeName;
-    private MessageHandler handler;
+    private DriverHandler handler;
 
     DriverImpl(String nodeName, MqttClient mqttClient, Globals globals, Options options) {
         this.nodeName = nodeName;
@@ -50,7 +50,7 @@ final class DriverImpl implements Driver {
             if (Topics.isTopLevelTopic(topic)) {
                 this.mqttTopics[i] = topic;
             } else {
-                this.mqttTopics[i] = Topics.topicOfTrigger(topic);
+                this.mqttTopics[i] = Topics.wrapTriggerEvents(topic);
             }
         }
     }
@@ -61,14 +61,14 @@ final class DriverImpl implements Driver {
     }
 
     @Override
-    public void process(MessageHandler handler) {
+    public void process(DriverHandler handler) {
         this.handler = Objects.requireNonNull(handler);
     }
 
     @Override
     public void publishStat(Message stat) {
         // Stat消息参数：QoS 0，not retained
-        this.publishMQTT(Topics.topicOfStat(this.nodeName), stat, 0, false);
+        this.publishMQTT(Topics.wrapStat(this.nodeName), stat, 0, false);
     }
 
     @Override
@@ -116,17 +116,19 @@ final class DriverImpl implements Driver {
         this.stats.up();
 
         // 监听所有Trigger的UserTopic
-        final IMqttMessageListener listener = (topic, message) -> {
+        final IMqttMessageListener listener = (mqttTopic, message) -> {
+            final byte[] bytes = message.getPayload();
+            final String exTopic = Topics.unwrapTriggerEvents(mqttTopic);
+            this.stats.updateRecv(bytes.length);
             try {
-                final byte[] bytes = message.getPayload();
-                this.stats.updateRecv(bytes.length);
-                handler.handle(Message.parse(bytes));
+                handler.handle(exTopic, Message.parse(bytes));
             } catch (Exception e) {
                 log.error("消息处理出错", e);
             }
         };
+
+        final int qos = this.globals.getMqttQoS();
         try {
-            final int qos = this.globals.getMqttQoS();
             for (String topic : this.mqttTopics) {
                 log.debug("开启监听事件: QOS= " + qos + ", Topic= " + topic);
                 this.mqttClientRef.subscribe(topic, qos, listener);

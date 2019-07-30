@@ -9,14 +9,14 @@ import lombok.extern.log4j.Log4j;
 @Log4j
 final public class Topics {
 
-    private static final String tNodesInspect = "$EdgeX/nodes/inspect";
-    private static final String tNodesStats = "$EdgeX/nodes/stats/%s";
-    private static final String tNodesOffline = "$EdgeX/nodes/offline/%s/%s";
-    private static final String tNodesEvent = "$EdgeX/events/${user-topic}";
+    private static final String prefixEvent = "$EdgeX/events/";
+    private static final String prefixNode = "$EdgeX/nodes/";
 
-    public static final String TopicNodesInspect = "$EdgeX/nodes/inspect";
-    public static final String TopicNodesOffline = "$EdgeX/nodes/offline/#";
-    public static final String TopicNodesEvent = "$EdgeX/events/#";
+    private static final String tNodesInspect = prefixNode + "inspect";
+    private static final String tNodesStats = prefixNode + "stats/%s";
+    private static final String tNodesOffline = prefixNode + "offline/%s/%s";
+    private static final String tNodesEvent = prefixEvent + "${user-topic}";
+
 
     private Topics() {
     }
@@ -28,22 +28,34 @@ final public class Topics {
      * @param topic Trigger定义的Topic
      * @return MQTT的Topic
      */
-    static String topicOfTrigger(String topic) {
+    static String wrapTriggerEvents(String topic) {
         if (topic.startsWith("/")) {
             log.fatal("Topic MUST NOT starts with '/', was: " + topic);
         }
         return tNodesEvent.replace("${user-topic}", topic);
     }
 
-    static String topicOfOffline(String typeName, String name) {
+    static String unwrapTriggerEvents(String topic) {
+        if (topic.length() > prefixEvent.length()) {
+            if (topic.startsWith(prefixEvent)) {
+                return topic.substring(prefixEvent.length());
+            } else {
+                return topic;
+            }
+        } else {
+            return topic;
+        }
+    }
+
+    static String wrapOffline(String typeName, String name) {
         return String.format(tNodesOffline, typeName, name);
     }
 
-    static String topicOfStat(String nodeName) {
+    static String wrapStat(String nodeName) {
         return String.format(tNodesStats, nodeName);
     }
 
     static boolean isTopLevelTopic(String topic) {
-        return topic.startsWith("$EdgeX/events/") || topic.startsWith("$EdgeX/nodes/");
+        return null != topic && (topic.startsWith(prefixEvent) || topic.startsWith(prefixNode));
     }
 }

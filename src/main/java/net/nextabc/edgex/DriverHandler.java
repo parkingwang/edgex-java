@@ -2,16 +2,16 @@ package net.nextabc.edgex;
 
 /**
  * @author 陈永佳 (yoojiachen@gmail.com)
- * @version 0.0.1
  */
 @FunctionalInterface
-public interface MessageHandler {
+public interface DriverHandler {
 
     /**
      * 处理消息
      *
+     * @param topic   EdgeXTopic
      * @param message 　接收到的消息
      * @throws Exception 　发生异常
      */
-    void handle(Message message) throws Exception;
+    void handle(String topic, Message message) throws Exception;
 }

@@ -18,7 +18,7 @@ public interface Driver extends LifeCycle {
      *
      * @param handler 处理函数
      */
-    void process(MessageHandler handler);
+    void process(DriverHandler handler);
 
     /**
      * 发送节点状态报告消息
