@@ -10,11 +10,13 @@ import lombok.extern.log4j.Log4j;
 final public class Topics {
 
     private static final String prefixEvent = "$EdgeX/events/";
+    private static final String prefixValues = "$EdgeX/values/";
     private static final String prefixNode = "$EdgeX/nodes/";
 
     private static final String tNodesStats = prefixNode + "stats/%s";
     private static final String tNodesOffline = prefixNode + "offline/%s/%s";
     private static final String tNodesEvent = prefixEvent + "${user-topic}";
+    private static final String tNodesValue = prefixValues + "${user-topic}";
 
     /**
      * 节点Inspect事件的订阅Topic
@@ -30,6 +32,11 @@ final public class Topics {
      * 节点发出TriggerEvent事件的订阅Topic
      */
     public static final String SubscribeNodeEvent = prefixEvent + "#";
+
+    /**
+     * 节点发出ValueEvent事件的订阅Topic
+     */
+    public static final String SubscribeNodeValue = prefixValues + "#";
 
     /**
      * 节点发出数据统计Event事件的订阅Topic
