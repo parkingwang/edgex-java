@@ -68,7 +68,7 @@ final class DriverImpl implements Driver {
     @Override
     public void publishStat(Message stat) {
         // Stat消息参数：QoS 0，not retained
-        this.publishMQTT(Topics.wrapStat(this.nodeName), stat, 0, false);
+        this.publishMQTT(Topics.wrapStats(this.nodeName), stat, 0, false);
     }
 
     @Override
