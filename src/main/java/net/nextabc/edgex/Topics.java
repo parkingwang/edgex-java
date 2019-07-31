@@ -107,6 +107,6 @@ final public class Topics {
      * @return 是否为EdgeX的事件
      */
     static boolean isTopLevelTopic(String topic) {
-        return null != topic && (topic.startsWith(prefixEvent) || topic.startsWith(prefixNode));
+        return null != topic && (topic.startsWith("$EdgeX/"));
     }
 }
