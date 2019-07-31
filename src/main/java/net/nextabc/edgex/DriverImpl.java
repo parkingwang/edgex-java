@@ -167,14 +167,15 @@ final class DriverImpl implements Driver {
     }
 
     private void publishMQTT(String mqttTopic, Message msg, int qos, boolean retained) {
-        final MqttClient cli = Objects.requireNonNull(this.mqttClientRef, "Mqtt客户端尚未启动");
+        final MqttClient mqtt = Objects.requireNonNull(this.mqttClientRef, "Mqtt客户端尚未启动");
         try {
-            cli.publish(mqttTopic,
+            mqtt.publish(
+                    mqttTopic,
                     msg.bytes(),
                     qos,
                     retained);
         } catch (MqttException e) {
-            log.error("发送MQTT消息出错", e);
+            log.error("发送MQTT消息出错: " + mqttTopic, e);
         }
     }
 
