@@ -50,7 +50,7 @@ final class DriverImpl implements Driver {
             if (Topics.isTopLevelTopic(topic)) {
                 this.mqttTopics[i] = topic;
             } else {
-                this.mqttTopics[i] = Topics.wrapTriggerEvents(topic);
+                this.mqttTopics[i] = Topics.wrapEvents(topic);
             }
         }
     }
@@ -116,12 +116,12 @@ final class DriverImpl implements Driver {
         this.stats.up();
 
         // 监听所有Trigger的UserTopic
-        final IMqttMessageListener listener = (mqttTopic, message) -> {
+        final IMqttMessageListener listener = (rawMqttTopic, message) -> {
             final byte[] bytes = message.getPayload();
-            final String exTopic = Topics.unwrapTriggerEvents(mqttTopic);
+            String topic = Topics.unwrapTopic(rawMqttTopic);
             this.stats.updateRecv(bytes.length);
             try {
-                handler.handle(exTopic, Message.parse(bytes));
+                handler.handle(topic, Message.parse(bytes));
             } catch (Exception e) {
                 log.error("消息处理出错", e);
             }

@@ -54,7 +54,7 @@ final public class Topics {
      * @param topic Trigger定义的Topic
      * @return MQTT的Topic
      */
-    static String wrapTriggerEvents(String topic) {
+    static String wrapEvents(String topic) {
         if (topic.startsWith("/")) {
             log.fatal("Topic MUST NOT starts with '/', was: " + topic);
         }
@@ -62,15 +62,31 @@ final public class Topics {
     }
 
     /**
-     * 拆解原始MQTT Topic，返回EdgeX定义的Trigger Event Topic
+     * 还原MQTT的Topic为EdgeX定义的Topic
      *
-     * @param mqttRawTopic MQTT 原始Topic
-     * @return Edgex定义的Topic
+     * @param mqttRawTopic MQTT原生Topic
+     * @return Topic
      */
-    static String unwrapTriggerEvents(String mqttRawTopic) {
-        if (mqttRawTopic.length() > prefixEvent.length()) {
+    static String unwrapTopic(String mqttRawTopic) {
+        if (isTopLevelTopic(mqttRawTopic)) {
             if (mqttRawTopic.startsWith(prefixEvent)) {
-                return mqttRawTopic.substring(prefixEvent.length());
+                return unwrap0(prefixEvent, mqttRawTopic);
+            } else if (mqttRawTopic.startsWith(prefixNode)) {
+                return unwrap0(prefixNode, mqttRawTopic);
+            } else if (mqttRawTopic.startsWith(prefixValues)) {
+                return unwrap0(prefixValues, mqttRawTopic);
+            } else {
+                return mqttRawTopic;
+            }
+        } else {
+            return mqttRawTopic;
+        }
+    }
+
+    private static String unwrap0(String prefix, String mqttRawTopic) {
+        if (mqttRawTopic.length() > prefix.length()) {
+            if (mqttRawTopic.startsWith(prefix)) {
+                return mqttRawTopic.substring(prefix.length());
             } else {
                 return mqttRawTopic;
             }
