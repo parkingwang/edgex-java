@@ -101,6 +101,14 @@ final class DriverImpl implements Driver {
     }
 
     @Override
+    public Message createMessage(String sourceNodeId, byte[] body) {
+        if (sourceNodeId.startsWith(this.nodeName)) {
+            log.warn("SourceNodeId使用当前节点的前缀，建议使用nextMessage(..)方法来创建");
+        }
+        return Message.create(sourceNodeId, body, nextSequenceId());
+    }
+
+    @Override
     public void addStartupListener(OnStartupListener<Driver> l) {
         this.startupListeners.add(l);
     }

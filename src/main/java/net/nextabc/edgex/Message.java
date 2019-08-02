@@ -157,6 +157,18 @@ public interface Message {
     /**
      * 根据字节数据，创建Message对象
      *
+     * @param sourceNodeId SourceNodeId
+     * @param body         body
+     * @param seqId        流水ID
+     * @return Message
+     */
+    static Message create(String sourceNodeId, byte[] body, int seqId) {
+        return create(sourceNodeId, body, FrameVarData, seqId);
+    }
+
+    /**
+     * 根据字节数据，创建Message对象
+     *
      * @param sourceNodeId SourceName
      * @param body         Body
      * @param ctrlVar      Control Var

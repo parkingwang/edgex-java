@@ -64,13 +64,22 @@ public interface Driver extends LifeCycle {
     int nextSequenceId();
 
     /**
-     * 基于内部消息流水号，创建消息对象
+     * 基于内部消息流水号，创建基于本节点的消息对象
      *
      * @param virtualNodeId 虚拟虚名ID
      * @param body          Body
      * @return 消息对象
      */
     Message nextMessage(String virtualNodeId, byte[] body);
+
+    /**
+     * 基于内部消息流水号，创建指定源ID的消息对象
+     *
+     * @param sourceNodeId 源节点ID
+     * @param body         Body
+     * @return 消息对象
+     */
+    Message createMessage(String sourceNodeId, byte[] body);
 
     /**
      * 添加Startup监听接口
