@@ -43,7 +43,6 @@ final public class Topics {
      */
     public static final String SubscribeNodeStats = prefixNode + "stats/#";
 
-
     private Topics() {
     }
     ////
@@ -51,14 +50,14 @@ final public class Topics {
     /**
      * 构建trigger event的Topic
      *
-     * @param topic Trigger定义的Topic
+     * @param edgeTopic Trigger定义的Topic
      * @return MQTT的Topic
      */
-    static String wrapEvents(String topic) {
-        if (topic.startsWith("/")) {
-            log.fatal("Topic MUST NOT starts with '/', was: " + topic);
+    public static String formatEvents(String edgeTopic) {
+        if (edgeTopic.startsWith("/")) {
+            log.fatal("Topic MUST NOT starts with '/', was: " + edgeTopic);
         }
-        return tNodesEvent.replace("${user-topic}", topic);
+        return tNodesEvent.replace("${user-topic}", edgeTopic);
     }
 
     /**
@@ -67,26 +66,14 @@ final public class Topics {
      * @param mqttRawTopic MQTT原生Topic
      * @return Topic
      */
-    static String unwrapTopic(String mqttRawTopic) {
-        if (isTopLevelTopic(mqttRawTopic)) {
+    public static String unwrapTopic(String mqttRawTopic) {
+        if (isSystem(mqttRawTopic)) {
             if (mqttRawTopic.startsWith(prefixEvent)) {
                 return unwrap0(prefixEvent, mqttRawTopic);
             } else if (mqttRawTopic.startsWith(prefixNode)) {
                 return unwrap0(prefixNode, mqttRawTopic);
             } else if (mqttRawTopic.startsWith(prefixValues)) {
                 return unwrap0(prefixValues, mqttRawTopic);
-            } else {
-                return mqttRawTopic;
-            }
-        } else {
-            return mqttRawTopic;
-        }
-    }
-
-    private static String unwrap0(String prefix, String mqttRawTopic) {
-        if (mqttRawTopic.length() > prefix.length()) {
-            if (mqttRawTopic.startsWith(prefix)) {
-                return mqttRawTopic.substring(prefix.length());
             } else {
                 return mqttRawTopic;
             }
@@ -102,7 +89,7 @@ final public class Topics {
      * @param nodeName 节点名称
      * @return Topic
      */
-    static String wrapOffline(String typeName, String nodeName) {
+    public static String formatOffline(String typeName, String nodeName) {
         return String.format(tNodesOffline, typeName, nodeName);
     }
 
@@ -112,17 +99,30 @@ final public class Topics {
      * @param nodeName 节点名称
      * @return Topic
      */
-    static String wrapStats(String nodeName) {
+    public static String formatStats(String nodeName) {
         return String.format(tNodesStats, nodeName);
     }
 
     /**
-     * 返回是否为顶级事件Topic
+     * 返回是否为EdgeX系统事件Topic
      *
      * @param topic Topic
      * @return 是否为EdgeX的事件
      */
-    static boolean isTopLevelTopic(String topic) {
+    public static boolean isSystem(String topic) {
         return null != topic && (topic.startsWith("$EdgeX/"));
     }
+
+    private static String unwrap0(String prefix, String mqttRawTopic) {
+        if (mqttRawTopic.length() > prefix.length()) {
+            if (mqttRawTopic.startsWith(prefix)) {
+                return mqttRawTopic.substring(prefix.length());
+            } else {
+                return mqttRawTopic;
+            }
+        } else {
+            return mqttRawTopic;
+        }
+    }
+
 }

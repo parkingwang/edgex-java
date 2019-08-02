@@ -47,10 +47,10 @@ final class DriverImpl implements Driver {
         this.mqttTopics = new String[size];
         for (int i = 0; i < size; i++) {
             final String topic = this.options.topics[i];
-            if (Topics.isTopLevelTopic(topic)) {
+            if (Topics.isSystem(topic)) {
                 this.mqttTopics[i] = topic;
             } else {
-                this.mqttTopics[i] = Topics.wrapEvents(topic);
+                this.mqttTopics[i] = Topics.formatEvents(topic);
             }
         }
     }
@@ -68,7 +68,7 @@ final class DriverImpl implements Driver {
     @Override
     public void publishStat(Message stat) {
         // Stat消息参数：QoS 0，not retained
-        this.publishMQTT(Topics.wrapStats(this.nodeName), stat, 0, false);
+        this.publishMQTT(Topics.formatStats(this.nodeName), stat, 0, false);
     }
 
     @Override
@@ -138,12 +138,14 @@ final class DriverImpl implements Driver {
         }
 
         // Send stat message
-        this.statTimer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                DriverImpl.this.publishStat(nextMessage(nodeName, stats.toJSONString().getBytes()));
-            }
-        }, 1000, this.options.sendStatIntervalSec * 1000);
+        if (this.options.sendStatIntervalSec > 0) {
+            this.statTimer.scheduleAtFixedRate(new TimerTask() {
+                @Override
+                public void run() {
+                    DriverImpl.this.publishStat(nextMessage(nodeName, stats.toJSONString().getBytes()));
+                }
+            }, 1000, this.options.sendStatIntervalSec * 1000);
+        }
 
         this.startupListeners.forEach(l -> l.onAfter(this));
     }
