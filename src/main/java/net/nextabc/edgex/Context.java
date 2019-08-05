@@ -10,7 +10,7 @@ import java.util.concurrent.TimeoutException;
  * @author 陈永佳 (yoojiachen@gmail.com)
  * @version 0.0.1
  */
-public interface Context {
+public interface Context extends NeedNodeId {
 
     String EnvKeyMQBroker = "EDGEX_MQTT_BROKER";
     String EnvKeyMQUsername = "EDGEX_MQTT_USERNAME";
@@ -19,8 +19,6 @@ public interface Context {
     String EnvKeyMQRetained = "EDGEX_MQTT_RETAINED";
     String EnvKeyMQCleanSession = "EDGEX_MQTT_CLEAN_SESSION";
     String EnvKeyConfig = "EDGEX_CONFIG";
-    String EnvKeyLogVerbose = "EDGEX_LOG_VERBOSE";
-    String EnvKeyGrpcAddress = "EDGEX_GRPC_ADDRESS";
 
     String MqttBrokerDefault = "tcp://mqtt-broker.edgex.io:1883";
 
@@ -30,9 +28,9 @@ public interface Context {
     /**
      * 初始化Context
      *
-     * @param nodeName Node Name
+     * @param nodeId Node Id
      */
-    void initial(String nodeName);
+    void initial(String nodeId);
 
     /**
      * 使用默认配置结构来初始化Context
@@ -45,13 +43,6 @@ public interface Context {
      * 销毁Context
      */
     void destroy();
-
-    /**
-     * 返回节点名称
-     *
-     * @return 节点名称
-     */
-    String nodeName();
 
     /**
      * 加载配置文件
@@ -77,13 +68,6 @@ public interface Context {
      * @return Driver对象
      */
     Driver newDriver(Driver.Options opts);
-
-    /**
-     * 创建Executor
-     *
-     * @return Executor对象
-     */
-    Executor newExecutor();
 
     /**
      * 返回终止信号

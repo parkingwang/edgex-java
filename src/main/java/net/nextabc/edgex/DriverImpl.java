@@ -4,8 +4,12 @@ import org.apache.log4j.Logger;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -19,45 +23,42 @@ final class DriverImpl implements Driver {
     private final Globals globals;
     private final Driver.Options options;
 
-    private final Executor executor;
     private final Timer statTimer;
 
     private final String[] mqttTopics;
     private final Stats stats = new Stats();
+
     private final AtomicInteger sequenceId = new AtomicInteger(0);
     private final List<OnStartupListener<Driver>> startupListeners = new ArrayList<>(0);
     private final List<OnShutdownListener<Driver>> shutdownListeners = new ArrayList<>(0);
+    private final Router router = new Router();
 
     private final MqttClient mqttClientRef;
-    private final String nodeName;
+    private final String nodeId;
+
     private DriverHandler handler;
 
-    DriverImpl(String nodeName, MqttClient mqttClient, Globals globals, Options options) {
-        this.nodeName = nodeName;
+    DriverImpl(String nodeId, MqttClient mqttClient, Globals globals, Options options) {
+        this.nodeId = nodeId;
         this.mqttClientRef = mqttClient;
         this.globals = Objects.requireNonNull(globals);
         this.options = Objects.requireNonNull(options);
-        this.executor = new ExecutorImpl(this.globals);
         this.statTimer = new Timer("DriverStatTimer");
         // topics
-        final int size = this.options.topics.length;
-        if (size == 0) {
-            log.fatal("Mqtt topics must be specified");
+        final List<String> topics = new ArrayList<>();
+        for (String topic : this.options.eventTopics) {
+            topics.add(Topics.formatEvents(topic));
         }
-        this.mqttTopics = new String[size];
-        for (int i = 0; i < size; i++) {
-            final String topic = this.options.topics[i];
-            if (Topics.isSystem(topic)) {
-                this.mqttTopics[i] = topic;
-            } else {
-                this.mqttTopics[i] = Topics.formatEvents(topic);
-            }
+        for (String topic : this.options.valueTopics) {
+            topics.add(Topics.formatValues(topic));
         }
+        topics.addAll(Arrays.asList(this.options.customTopics));
+        this.mqttTopics = topics.toArray(new String[0]);
     }
 
     @Override
-    public String nodeName() {
-        return nodeName;
+    public String nodeId() {
+        return nodeId;
     }
 
     @Override
@@ -66,46 +67,23 @@ final class DriverImpl implements Driver {
     }
 
     @Override
-    public void publishStat(Message stat) {
-        // Stat消息参数：QoS 0，not retained
-        this.publishMQTT(Topics.formatStats(this.nodeName), stat, 0, false);
-    }
-
-    @Override
     public void publish(String mqttTopic, Message msg) {
         this.publishMQTT(mqttTopic, msg, this.globals.getMqttQoS(), this.globals.isMqttRetained());
     }
 
     @Override
-    public Message execute(String endpointAddress, Message in, int timeoutSec) throws Exception {
-        return this.executor.execute(endpointAddress, in, timeoutSec);
-    }
-
-    @Override
-    public Message hello(String endpointAddress, int timeoutSec) throws Exception {
-        return this.executor.execute(
-                endpointAddress,
-                Message.create(Message.makeSourceNodeId(this.nodeName, this.nodeName),
-                        new byte[0], Message.FrameVarPing, nextSequenceId()),
-                timeoutSec);
-    }
-
-    @Override
-    public int nextSequenceId() {
+    public int nextMessageSequenceId() {
         return sequenceId.getAndSet((sequenceId.get() + 1) % Integer.MAX_VALUE);
     }
 
     @Override
-    public Message nextMessage(String virtualNodeId, byte[] body) {
-        return Message.fromBytes(this.nodeName, virtualNodeId, body, nextSequenceId());
+    public Message nextMessageBy(String virtualId, byte[] body) {
+        return Message.newMessageWith(this.nodeId, virtualId, body, this.nextMessageSequenceId());
     }
 
     @Override
-    public Message createMessage(String sourceNodeId, byte[] body) {
-        if (sourceNodeId.startsWith(this.nodeName)) {
-            log.warn("SourceNodeId使用当前节点的前缀，建议使用nextMessage(..)方法来创建");
-        }
-        return Message.create(sourceNodeId, body, nextSequenceId());
+    public Message nextMessageOf(String virtualNodeId, byte[] body) {
+        return Message.newMessageById(virtualNodeId, body, this.nextMessageSequenceId());
     }
 
     @Override
@@ -126,7 +104,7 @@ final class DriverImpl implements Driver {
         // 监听所有Trigger的UserTopic
         final IMqttMessageListener listener = (rawMqttTopic, message) -> {
             final byte[] bytes = message.getPayload();
-            String topic = Topics.unwrapTopic(rawMqttTopic);
+            final String topic = Topics.unwrapEdgeXTopic(rawMqttTopic);
             this.stats.updateRecv(bytes.length);
             try {
                 handler.handle(topic, Message.parse(bytes));
@@ -142,17 +120,15 @@ final class DriverImpl implements Driver {
                 this.mqttClientRef.subscribe(topic, qos, listener);
             }
         } catch (MqttException e) {
-            log.fatal("Mqtt客户端订阅事件出错：", e);
+            log.fatal("监听TRIGGER事件出错：", e);
         }
 
-        // Send stat message
-        if (this.options.sendStatIntervalSec > 0) {
-            this.statTimer.scheduleAtFixedRate(new TimerTask() {
-                @Override
-                public void run() {
-                    DriverImpl.this.publishStat(nextMessage(nodeName, stats.toJSONString().getBytes()));
-                }
-            }, 1000, this.options.sendStatIntervalSec * 1000);
+        try {
+            this.mqttClientRef.subscribe(
+                    Topics.formatRepliesListen(this.nodeId),
+                    router::dispatchThenRemove);
+        } catch (MqttException e) {
+            log.fatal("监听RPC事件出错：", e);
         }
 
         this.startupListeners.forEach(l -> l.onAfter(this));
@@ -162,18 +138,49 @@ final class DriverImpl implements Driver {
     public void shutdown() {
         this.shutdownListeners.forEach(l -> l.onBefore(this));
         for (String t : this.mqttTopics) {
-            log.debug("取消监听事件[TRIGGER]: " + t);
+            log.debug("取消监听事件: " + t);
         }
 
         try {
             this.mqttClientRef.unsubscribe(this.mqttTopics);
         } catch (MqttException e) {
-            log.fatal("Mqtt客户端出错：", e);
+            log.fatal("取消监听出错：", e);
         }
 
         this.statTimer.cancel();
         this.statTimer.purge();
         this.shutdownListeners.forEach(l -> l.onAfter(this));
+    }
+
+    @Override
+    public Message execute(String remoteNodeId, Message in, int timeoutSec) throws Exception {
+        final CountDownLatch cdl = new CountDownLatch(1);
+        final Wrap<Message> outW = new Wrap<>();
+        this.call(remoteNodeId, in, out -> {
+            outW.set(out);
+            cdl.countDown();
+        });
+        cdl.await(timeoutSec, TimeUnit.SECONDS);
+        return outW.get();
+    }
+
+    @Override
+    public void call(String remoteNodeId, Message in, Callback cb) {
+        log.debug("MQ_RPC调用Endpoint.NodeId: " + remoteNodeId);
+        try {
+            this.mqttClientRef.publish(
+                    Topics.formatRequestSend(remoteNodeId, in.sequenceId(), this.nodeId),
+                    in.bytes(),
+                    this.globals.getMqttQoS(),
+                    false
+            );
+        } catch (MqttException e) {
+            log.error("发送MQ_RPC消息出错: ", e);
+        }
+        final String topic = Topics.formatRepliesFilter(remoteNodeId, in.sequenceId(), this.nodeId);
+        this.router.register(topic, (t, msg) -> {
+            cb.onMessage(Message.parse(msg.getPayload()));
+        });
     }
 
     private void publishMQTT(String mqttTopic, Message msg, int qos, boolean retained) {
@@ -215,4 +222,43 @@ final class DriverImpl implements Driver {
                     "}";
         }
     }
+
+    ////
+
+    private static class Wrap<T> {
+        private T value;
+
+        public T get() {
+            return value;
+        }
+
+        public void set(T value) {
+            this.value = value;
+        }
+    }
+
+    ////
+
+    private static class Router {
+
+        private final Map<String, RouterHandler> handlers = new ConcurrentHashMap<>();
+
+        void dispatchThenRemove(String topic, MqttMessage msg) {
+            final RouterHandler cb = handlers.remove(topic);
+            if (cb != null) {
+                cb.onMessage(topic, msg);
+            }
+        }
+
+        void register(String topic, RouterHandler callback) {
+            handlers.put(topic, callback);
+        }
+    }
+
+    ////
+
+    private interface RouterHandler {
+        void onMessage(String topic, MqttMessage msg);
+    }
+
 }

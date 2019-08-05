@@ -26,23 +26,23 @@ final class ContextImpl implements Context {
 
     private Globals globals;
     private MqttClient mqttClient;
-    private String nodeName;
+    private String nodeId;
 
     ContextImpl(Globals globals) {
         this.globals = globals;
     }
 
     @Override
-    public void initial(String nodeName) {
-        this.initialWithConfig(HashMap.of("NodeName", nodeName));
+    public void initial(String nodeId) {
+        this.initialWithConfig(HashMap.of("NodeId", nodeId));
     }
 
     @Override
     public void initialWithConfig(Map<String, Object> in) {
         final ImmutableMap config = ImmutableMap.wrap(in);
-        nodeName = config.getString("NodeName");
-        if (nodeName == null || nodeName.isEmpty() || nodeName.contains("/")) {
-            log.fatal("非法格式的NodeName: " + nodeName);
+        nodeId = config.getString("NodeId");
+        if (nodeId == null || nodeId.isEmpty() || nodeId.contains("/")) {
+            log.fatal("非法格式的NodeId: " + nodeId);
         }
         // 更新Globals
         final ImmutableMap g = config.getImmutableMap("Globals");
@@ -82,7 +82,7 @@ final class ContextImpl implements Context {
             }
         }
 
-        final String clientId = "EX-Node:" + nodeName;
+        final String clientId = "EXNode:" + nodeId;
         final MemoryPersistence mp = new MemoryPersistence();
         try {
             this.mqttClient = new MqttClient(this.globals.getMqttBroker(), clientId, mp);
@@ -91,7 +91,7 @@ final class ContextImpl implements Context {
         }
         log.info("Mqtt客户端连接Broker: " + globals.getMqttBroker());
         final MqttConnectOptions opts = new MqttConnectOptions();
-        opts.setWill(Topics.formatOffline("Driver", nodeName), "offline".getBytes(), 1, false);
+        opts.setWill(Topics.formatOffline("Driver", nodeId), "offline".getBytes(), 1, false);
         Mqtt.setup(this.globals, opts);
         for (int i = 0; i < globals.getMqttMaxRetry(); i++) {
             try {
@@ -124,8 +124,8 @@ final class ContextImpl implements Context {
     }
 
     @Override
-    public String nodeName() {
-        return nodeName;
+    public String nodeId() {
+        return nodeId;
     }
 
     @Override
@@ -153,14 +153,8 @@ final class ContextImpl implements Context {
     @Override
     public Driver newDriver(Driver.Options opts) {
         checkCtx();
-        checkRequired(opts.topics, "Driver.Topic MUST be specified");
-        return new DriverImpl(nodeName, mqttClient, globals, opts);
-    }
-
-    @Override
-    public Executor newExecutor() {
-        checkCtx();
-        return new ExecutorImpl(this.globals);
+        checkRequired(opts.eventTopics, "Driver.Topic MUST be specified");
+        return new DriverImpl(nodeId, mqttClient, globals, opts);
     }
 
     @Override

@@ -31,7 +31,7 @@ repositories {
 
 
 group 'net.nextabc'
-version '1.4.2-a7'
+version '1.5.0-a1'
 description = 'Edge X for java'
 
 
@@ -48,13 +48,6 @@ dependencies {
     compile 'com.moandjiezana.toml:toml4j:0.7.2'
     // MQTT
     compile 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.1'
-    // gRPC
-    compile 'io.grpc:grpc-netty-shaded:1.21.0'
-    compile 'io.grpc:grpc-protobuf:1.21.0'
-    compile 'io.grpc:grpc-stub:1.21.0'
-    // ProtoBuf
-    compile 'com.google.protobuf:protobuf-java:3.7.1'
-    compile 'javax.annotation:javax.annotation-api:1.3.2'
     // Kit
     compile 'net.nextabc:toolkit:1.0.0'
     // Lombok, 注意，需要IDE插件支持

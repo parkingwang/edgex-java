@@ -9,39 +9,35 @@ import lombok.extern.log4j.Log4j;
 @Log4j
 final public class Topics {
 
-    private static final String prefixEvent = "$EdgeX/events/";
+    private static final String prefixEvents = "$EdgeX/events/";
     private static final String prefixValues = "$EdgeX/values/";
-    private static final String prefixNode = "$EdgeX/nodes/";
-
-    private static final String tNodesStats = prefixNode + "stats/%s";
-    private static final String tNodesOffline = prefixNode + "offline/%s/%s";
-    private static final String tNodesEvent = prefixEvent + "${user-topic}";
-    private static final String tNodesValue = prefixValues + "${user-topic}";
+    private static final String prefixNodes = "$EdgeX/nodes/";
+    private static final String prefixStats = "$EdgeX/stats/";
 
     /**
      * 节点Inspect事件的订阅Topic
      */
-    public static final String SubscribeNodesInspect = prefixNode + "inspect";
+    public static final String SubscribeNodesInspect = prefixStats + "inspect";
 
     /**
      * 节点发出Offline事件的订阅Topic
      */
-    public static final String SubscribeNodeOffline = prefixNode + "offline/#";
+    public static final String SubscribeNodesOffline = prefixNodes + "offline/#";
 
     /**
      * 节点发出TriggerEvent事件的订阅Topic
      */
-    public static final String SubscribeNodeEvent = prefixEvent + "#";
+    public static final String SubscribeNodesEvents = prefixEvents + "#";
 
     /**
      * 节点发出ValueEvent事件的订阅Topic
      */
-    public static final String SubscribeNodeValue = prefixValues + "#";
+    public static final String SubscribeNodesValues = prefixValues + "#";
 
     /**
      * 节点发出数据统计Event事件的订阅Topic
      */
-    public static final String SubscribeNodeStats = prefixNode + "stats/#";
+    public static final String SubscribeNodesStats = prefixStats + "stats/#";
 
     private Topics() {
     }
@@ -50,14 +46,27 @@ final public class Topics {
     /**
      * 构建trigger event的Topic
      *
-     * @param edgeTopic Trigger定义的Topic
+     * @param topic Trigger定义的Topic
      * @return MQTT的Topic
      */
-    public static String formatEvents(String edgeTopic) {
-        if (edgeTopic.startsWith("/")) {
-            log.fatal("Topic MUST NOT starts with '/', was: " + edgeTopic);
-        }
-        return tNodesEvent.replace("${user-topic}", edgeTopic);
+    public static String formatEvents(String topic) {
+        checkTopic(topic);
+        return String.format("$EdgeX/events/%s", topic);
+    }
+
+    /**
+     * 构建trigger values的Topic
+     *
+     * @param topic Trigger定义的Topic
+     * @return MQTT的Topic
+     */
+    public static String formatValues(String topic) {
+        checkTopic(topic);
+        return String.format("$EdgeX/values/%s", topic);
+    }
+
+    static String formatOffline(String typeName, String name) {
+        return String.format("$EdgeX/nodes/offline/%s/%s", typeName, name);
     }
 
     /**
@@ -66,12 +75,12 @@ final public class Topics {
      * @param mqttRawTopic MQTT原生Topic
      * @return Topic
      */
-    public static String unwrapTopic(String mqttRawTopic) {
-        if (isSystem(mqttRawTopic)) {
-            if (mqttRawTopic.startsWith(prefixEvent)) {
-                return unwrap0(prefixEvent, mqttRawTopic);
-            } else if (mqttRawTopic.startsWith(prefixNode)) {
-                return unwrap0(prefixNode, mqttRawTopic);
+    public static String unwrapEdgeXTopic(String mqttRawTopic) {
+        if (isEdgeX(mqttRawTopic)) {
+            if (mqttRawTopic.startsWith(prefixEvents)) {
+                return unwrap0(prefixEvents, mqttRawTopic);
+            } else if (mqttRawTopic.startsWith(prefixStats)) {
+                return unwrap0(prefixStats, mqttRawTopic);
             } else if (mqttRawTopic.startsWith(prefixValues)) {
                 return unwrap0(prefixValues, mqttRawTopic);
             } else {
@@ -82,25 +91,16 @@ final public class Topics {
         }
     }
 
-    /**
-     * 构建Offline事件Topic
-     *
-     * @param typeName 类型名称
-     * @param nodeName 节点名称
-     * @return Topic
-     */
-    public static String formatOffline(String typeName, String nodeName) {
-        return String.format(tNodesOffline, typeName, nodeName);
+    static String formatRepliesListen(String callerNodeId) {
+        return String.format("$EdgeX/replies/%s/+/+", callerNodeId);
     }
 
-    /**
-     * 构建数据统计事件Topic
-     *
-     * @param nodeName 节点名称
-     * @return Topic
-     */
-    public static String formatStats(String nodeName) {
-        return String.format(tNodesStats, nodeName);
+    static String formatRequestSend(String executorNodeId, int seqId, String callerNodeId) {
+        return String.format("$EdgeX/requests/%s/%d/%s", executorNodeId, seqId, callerNodeId);
+    }
+
+    static String formatRepliesFilter(String executorNodeId, int seqId, String callerNodeId) {
+        return String.format("$EdgeX/replies/%s/%d/%s", callerNodeId, seqId, executorNodeId);
     }
 
     /**
@@ -109,8 +109,14 @@ final public class Topics {
      * @param topic Topic
      * @return 是否为EdgeX的事件
      */
-    public static boolean isSystem(String topic) {
+    static boolean isEdgeX(String topic) {
         return null != topic && (topic.startsWith("$EdgeX/"));
+    }
+
+    private static void checkTopic(String topic) {
+        if (null == topic || topic.startsWith("/")) {
+            log.fatal("Topic MUST NOT starts with '/', was: " + topic);
+        }
     }
 
     private static String unwrap0(String prefix, String mqttRawTopic) {

@@ -12,8 +12,6 @@ public interface Message {
     byte FrameVersion = 0x01; // 版本
     byte FrameEmpty = 0x00; // 分隔空帧
     byte FrameVarData = (byte) 0xDA;
-    byte FrameVarPing = (byte) 0xD0;
-    byte FrameVarPong = (byte) 0xD1;
 
     /**
      * 返回消息全部字节
@@ -37,11 +35,12 @@ public interface Message {
     byte[] body();
 
     /**
-     * 返回消息体创建源组件名字
+     * 返回虚拟节点ID
+     * 它由两部分组成：NodeId + VirtualId。在可以唯一标识一个虚拟设备。
      *
-     * @return 返回消息体创建源组件名字
+     * @return 虚拟节点ID
      */
-    String sourceNodeId();
+    String virtualNodeId();
 
     /**
      * 返回返回消息Id
@@ -111,7 +110,7 @@ public interface Message {
         }
 
         @Override
-        public String sourceNodeId() {
+        public String virtualNodeId() {
             return this.sourceNodeId;
         }
 
@@ -124,63 +123,41 @@ public interface Message {
 
     ////
 
-    static String makeSourceNodeId(String nodeName, String virtualNodeId) {
-        return nodeName + ":" + virtualNodeId;
+    static String makeVirtualNodeId(String nodeId, String virtualId) {
+        return nodeId + ":" + virtualId;
     }
 
     /**
-     * 根据字符数据，创建Message对象
+     * 根据字节数据，创建Message对象
      *
-     * @param nodeName      NodeName
-     * @param virtualNodeId Virtual Node ID
-     * @param body          Body
+     * @param virtualNodeId Virtual Node Id
+     * @param body          body
      * @param seqId         流水ID
      * @return Message
      */
-    static Message fromString(String nodeName, String virtualNodeId, String body, int seqId) {
-        return fromBytes(nodeName, virtualNodeId, body.getBytes(), seqId);
+    static Message newMessageById(String virtualNodeId, byte[] body, int seqId) {
+        return new message(
+                new Header(FrameMagic, FrameVersion, FrameVarData, seqId),
+                virtualNodeId,
+                body);
+
     }
 
     /**
      * 根据字节数据，创建Message对象
      *
-     * @param nodeName      NodeName
-     * @param virtualNodeId Virtual Node ID
-     * @param body          Body
-     * @param seqId         流水ID
+     * @param nodeId    Node Id
+     * @param virtualId Virtual Id
+     * @param body      body
+     * @param seqId     流水ID
      * @return Message
      */
-    static Message fromBytes(String nodeName, String virtualNodeId, byte[] body, int seqId) {
-        return create(makeSourceNodeId(nodeName, virtualNodeId), body, FrameVarData, seqId);
-    }
-
-    /**
-     * 根据字节数据，创建Message对象
-     *
-     * @param sourceNodeId SourceNodeId
-     * @param body         body
-     * @param seqId        流水ID
-     * @return Message
-     */
-    static Message create(String sourceNodeId, byte[] body, int seqId) {
-        return create(sourceNodeId, body, FrameVarData, seqId);
-    }
-
-    /**
-     * 根据字节数据，创建Message对象
-     *
-     * @param sourceNodeId SourceName
-     * @param body         Body
-     * @param ctrlVar      Control Var
-     * @param seqId        流水ID
-     * @return Message
-     */
-    static Message create(String sourceNodeId, byte[] body, byte ctrlVar, int seqId) {
-        return new message(new Header(
-                FrameMagic,
-                FrameVersion,
-                ctrlVar,
-                seqId), sourceNodeId, body);
+    static Message newMessageWith(String nodeId, String virtualId, byte[] body, int seqId) {
+        return newMessageById(
+                makeVirtualNodeId(nodeId, virtualId),
+                body,
+                seqId
+        );
     }
 
     /**

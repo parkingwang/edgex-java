@@ -23,7 +23,7 @@ public class MessageTestCase {
         Assert.assertEquals(Message.FrameVersion, msg.header().version);
         Assert.assertEquals(Message.FrameVarData, msg.header().controlVar);
         Assert.assertEquals(2019, msg.sequenceId());
-        Assert.assertEquals(Message.makeSourceNodeId("CHEN", "NODE"), msg.sourceNodeId());
+        Assert.assertEquals(Message.makeVirtualNodeId("CHEN", "NODE"), msg.virtualNodeId());
         Assert.assertArrayEquals(body, msg.body());
     }
 }
