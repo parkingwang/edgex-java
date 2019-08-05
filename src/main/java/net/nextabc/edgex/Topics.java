@@ -46,26 +46,19 @@ final public class Topics {
     }
     ////
 
-    /**
-     * 构建trigger event的Topic
-     *
-     * @param topic Trigger定义的Topic
-     * @return MQTT的Topic
-     */
-    public static String formatEvents(String topic) {
+    static String formatEvents(String topic) {
         checkTopic(topic);
         return prefixEvents + topic;
     }
 
-    /**
-     * 构建trigger values的Topic
-     *
-     * @param topic Trigger定义的Topic
-     * @return MQTT的Topic
-     */
-    public static String formatValues(String topic) {
+    static String formatValues(String topic) {
         checkTopic(topic);
         return prefixValues + topic;
+    }
+
+    static String formatStats(String topic) {
+        checkTopic(topic);
+        return prefixStats + topic;
     }
 
     static String formatOffline(String typeName, String name) {

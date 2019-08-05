@@ -134,7 +134,7 @@ final class DriverImpl implements Driver {
         // 定时发送Stats
         this.statsTimer.scheduleAtFixedRate(new TimerTask() {
 
-            private final String mqttTopic = Topics.formatEvents(nodeId);
+            private final String mqttTopic = Topics.formatStats(nodeId);
 
             @Override
             public void run() {
@@ -179,16 +179,12 @@ final class DriverImpl implements Driver {
     @Override
     public void call(String remoteNodeId, Message in, Callback cb) {
         log.debug("MQ_RPC调用Endpoint.NodeId: " + remoteNodeId);
-        try {
-            this.mqttClientRef.publish(
-                    Topics.formatRequestSend(remoteNodeId, in.sequenceId(), this.nodeId),
-                    in.bytes(),
-                    this.globals.getMqttQoS(),
-                    false
-            );
-        } catch (MqttException e) {
-            log.error("发送MQ_RPC消息出错: ", e);
-        }
+        publishMQTT(
+                Topics.formatRequestSend(remoteNodeId, in.sequenceId(), this.nodeId),
+                in,
+                this.globals.getMqttQoS(),
+                false
+        );
         final String topic = Topics.formatRepliesFilter(remoteNodeId, in.sequenceId(), this.nodeId);
         this.router.register(topic, (t, msg) -> {
             cb.onMessage(Message.parse(msg.getPayload()));
@@ -220,12 +216,12 @@ final class DriverImpl implements Driver {
             this.uptime = System.currentTimeMillis();
         }
 
-        public void updateRecv(long size) {
+        void updateRecv(long size) {
             this.recvCount++;
             this.recvBytes += size;
         }
 
-        public String toJSONString() {
+        String toJSONString() {
             final long du = (System.currentTimeMillis() - this.uptime) / 1000;
             return "{" +
                     "\"uptime\": " + du +
