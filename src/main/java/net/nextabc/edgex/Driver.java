@@ -19,7 +19,7 @@ public interface Driver extends LifeCycle, NeedNodeId, NeedMessages {
      * @param mqttTopic MQTT完整Topic
      * @param message   消息
      */
-    void publish(String mqttTopic, Message message);
+    void publish(String mqttTopic, Message message, int qos, boolean retained);
 
     /**
      * 发起一个消息请求，并获取响应消息。

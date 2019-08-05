@@ -21,9 +21,8 @@ final class DriverImpl implements Driver {
     private static final Logger log = Logger.getLogger(DriverImpl.class);
 
     private final Globals globals;
-    private final Driver.Options options;
 
-    private final Timer statTimer;
+    private final Timer statsTimer;
 
     private final String[] mqttTopics;
     private final Stats stats = new Stats();
@@ -42,17 +41,16 @@ final class DriverImpl implements Driver {
         this.nodeId = nodeId;
         this.mqttClientRef = mqttClient;
         this.globals = Objects.requireNonNull(globals);
-        this.options = Objects.requireNonNull(options);
-        this.statTimer = new Timer("DriverStatTimer");
+        this.statsTimer = new Timer("DriverStatsTimer");
         // topics
         final List<String> topics = new ArrayList<>();
-        for (String topic : this.options.eventTopics) {
+        for (String topic : options.eventTopics) {
             topics.add(Topics.formatEvents(topic));
         }
-        for (String topic : this.options.valueTopics) {
+        for (String topic : options.valueTopics) {
             topics.add(Topics.formatValues(topic));
         }
-        topics.addAll(Arrays.asList(this.options.customTopics));
+        topics.addAll(Arrays.asList(options.customTopics));
         this.mqttTopics = topics.toArray(new String[0]);
     }
 
@@ -67,8 +65,8 @@ final class DriverImpl implements Driver {
     }
 
     @Override
-    public void publish(String mqttTopic, Message msg) {
-        this.publishMQTT(mqttTopic, msg, this.globals.getMqttQoS(), this.globals.isMqttRetained());
+    public void publish(String mqttTopic, Message msg, int qos, boolean retained) {
+        this.publishMQTT(mqttTopic, msg, qos, retained);
     }
 
     @Override
@@ -132,6 +130,20 @@ final class DriverImpl implements Driver {
         }
 
         this.startupListeners.forEach(l -> l.onAfter(this));
+
+        // 定时发送Stats
+        this.statsTimer.scheduleAtFixedRate(new TimerTask() {
+
+            private final String mqttTopic = Topics.formatEvents(nodeId);
+
+            @Override
+            public void run() {
+                publishMQTT(mqttTopic,
+                        nextMessageBy(nodeId, stats.toJSONString().getBytes()),
+                        0,
+                        false);
+            }
+        }, 3000, 1000 * 10);
     }
 
     @Override
@@ -147,8 +159,8 @@ final class DriverImpl implements Driver {
             log.fatal("取消监听出错：", e);
         }
 
-        this.statTimer.cancel();
-        this.statTimer.purge();
+        this.statsTimer.cancel();
+        this.statsTimer.purge();
         this.shutdownListeners.forEach(l -> l.onAfter(this));
     }
 
