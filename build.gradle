@@ -3,10 +3,6 @@ buildscript {
         jcenter()
         maven { url "https://maven.aliyun.com/repository/public" }
     }
-    // gRPC, ProtoBuf
-    dependencies {
-        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.8'
-    }
 }
 
 plugins {
@@ -15,8 +11,6 @@ plugins {
     id 'idea'
     id 'maven-publish'
     id "com.jfrog.bintray" version "1.8.1"
-    // gRPC, ProtoBuf
-    id "com.google.protobuf" version "0.8.8"
 }
 
 sourceCompatibility = JavaVersion.VERSION_1_8
@@ -55,23 +49,6 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.8'
     // Test
     testCompile 'junit:junit:4.12'
-}
-
-// gRPC, ProtoBuf
-protobuf {
-    protoc {
-        artifact = "com.google.protobuf:protoc:3.7.1"
-    }
-    plugins {
-        grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java:1.21.0'
-        }
-    }
-    generateProtoTasks {
-        all()*.plugins {
-            grpc {}
-        }
-    }
 }
 
 ext {
@@ -158,9 +135,9 @@ def pomConfig = {
 
     developers {
         developer {
-            id "bitschen"
-            name "bits chen"
-            email "bitschen@163.com"
+            id "yoojia"
+            name "yoojia chen"
+            email "yoojiachen@gmail.com"
         }
     }
 
