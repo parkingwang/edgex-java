@@ -51,6 +51,10 @@ final class DriverImpl implements Driver {
         }
         topics.addAll(options.customTopics);
         this.mqttTopics = topics.toArray(new String[0]);
+        // 一些场景中，Driver只用作驱动，不监听任何事件
+        if (this.mqttTopics.length == 0) {
+            log.warn("Driver未监听任何事件：" + nodeId);
+        }
     }
 
     @Override
@@ -114,28 +118,30 @@ final class DriverImpl implements Driver {
         this.startupListeners.forEach(l -> l.onBefore(this));
         this.stats.up();
 
-        // 监听所有Trigger的UserTopic
-        final IMqttMessageListener listener = (rawMqttTopic, message) -> {
-            final byte[] bytes = message.getPayload();
-            final String topic = Topics.unwrapEdgeXTopic(rawMqttTopic);
-            this.stats.updateRecv(bytes.length);
+        if (this.mqttTopics.length > 0) {
+            // 监听所有Trigger的UserTopic
+            final IMqttMessageListener listener = (rawMqttTopic, message) -> {
+                final byte[] bytes = message.getPayload();
+                final String topic = Topics.unwrapEdgeXTopic(rawMqttTopic);
+                this.stats.updateRecv(bytes.length);
+                try {
+                    handler.handle(topic, Message.parse(bytes));
+                } catch (Exception e) {
+                    log.error("消息处理出错", e);
+                }
+            };
+            final int qos = this.globals.getMqttQoS();
             try {
-                handler.handle(topic, Message.parse(bytes));
-            } catch (Exception e) {
-                log.error("消息处理出错", e);
+                for (String topic : this.mqttTopics) {
+                    log.debug("开启监听事件: QOS= " + qos + ", Topic= " + topic);
+                    this.mqttClientRef.subscribe(topic, qos, listener);
+                }
+            } catch (MqttException e) {
+                log.fatal("监听TRIGGER事件出错：", e);
             }
-        };
-
-        final int qos = this.globals.getMqttQoS();
-        try {
-            for (String topic : this.mqttTopics) {
-                log.debug("开启监听事件: QOS= " + qos + ", Topic= " + topic);
-                this.mqttClientRef.subscribe(topic, qos, listener);
-            }
-        } catch (MqttException e) {
-            log.fatal("监听TRIGGER事件出错：", e);
         }
 
+        // Async RPC监听
         try {
             this.mqttClientRef.subscribe(
                     Topics.formatRepliesListen(this.nodeId),
@@ -143,8 +149,6 @@ final class DriverImpl implements Driver {
         } catch (MqttException e) {
             log.fatal("监听RPC事件出错：", e);
         }
-
-        this.startupListeners.forEach(l -> l.onAfter(this));
 
         // 定时发送Stats
         this.statsTimer.scheduleAtFixedRate(new TimerTask() {
@@ -160,6 +164,8 @@ final class DriverImpl implements Driver {
                         false);
             }
         }, 3000, 1000 * 10);
+
+        this.startupListeners.forEach(l -> l.onAfter(this));
     }
 
     @Override

@@ -155,7 +155,6 @@ final class ContextImpl implements Context {
     @Override
     public Driver newDriver(Driver.Options opts) {
         checkCtx();
-        checkRequired(opts.eventTopics, "Driver.Topic MUST be specified");
         return new DriverImpl(nodeId, mqttClient, globals, opts);
     }
 
@@ -170,18 +169,6 @@ final class ContextImpl implements Context {
             this.termChan().await();
         } catch (Exception e) {
             log.error("等待终止信号超时", e);
-        }
-    }
-
-    private void checkRequired(Object item, String message) {
-        if (null == item) {
-            log.fatal(message);
-        }
-        if (item instanceof String && ((String) item).isEmpty()) {
-            log.fatal(message);
-        }
-        if (item instanceof String[] && ((String[]) item).length == 0) {
-            log.fatal(message);
         }
     }
 
