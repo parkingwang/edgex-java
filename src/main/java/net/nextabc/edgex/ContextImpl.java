@@ -27,9 +27,11 @@ final class ContextImpl implements Context {
     private Globals globals;
     private MqttClient mqttClient;
     private String nodeId;
+    private final CountDownLatch shutdown = new CountDownLatch(1);
 
     ContextImpl(Globals globals) {
         this.globals = globals;
+        Runtime.getRuntime().addShutdownHook(new Thread(shutdown::countDown));
     }
 
     @Override
@@ -159,9 +161,7 @@ final class ContextImpl implements Context {
 
     @Override
     public CountDownLatch termChan() {
-        final CountDownLatch latch = new CountDownLatch(1);
-        Runtime.getRuntime().addShutdownHook(new Thread(latch::countDown));
-        return latch;
+        return shutdown;
     }
 
     @Override
