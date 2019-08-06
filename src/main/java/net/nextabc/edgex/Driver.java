@@ -1,6 +1,7 @@
 package net.nextabc.edgex;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -76,18 +77,18 @@ public interface Driver extends LifeCycle, NodeId, Messaging, Publishable {
             this.customTopics = customTopics == null ? Collections.emptyList() : customTopics;
         }
 
-        public Options addEventTopic(String topic) {
-            eventTopics.add(topic);
+        public Options addEventTopic(String... topics) {
+            eventTopics.addAll(Arrays.asList(topics));
             return this;
         }
 
-        public Options addValueTopic(String topic) {
-            valueTopics.add(topic);
+        public Options addValueTopic(String... topics) {
+            valueTopics.addAll(Arrays.asList(topics));
             return this;
         }
 
-        public Options addCustomTopic(String topic) {
-            customTopics.add(topic);
+        public Options addCustomTopic(String... topics) {
+            customTopics.addAll(Arrays.asList(topics));
             return this;
         }
     }
