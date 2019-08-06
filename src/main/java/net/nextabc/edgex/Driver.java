@@ -1,12 +1,14 @@
 package net.nextabc.edgex;
 
-import lombok.Builder;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author 陈永佳 (yoojiachen@gmail.com)
  * @version 0.0.1
  */
-public interface Driver extends LifeCycle, NeedNodeId, NeedMessages {
+public interface Driver extends LifeCycle, NodeId, Messaging, Publishable {
 
     /**
      * 处理消息
@@ -14,14 +16,6 @@ public interface Driver extends LifeCycle, NeedNodeId, NeedMessages {
      * @param handler 处理函数
      */
     void process(DriverHandler handler);
-
-    /**
-     * 发送MQTT消息
-     *
-     * @param mqttTopic MQTT完整Topic
-     * @param message   消息
-     */
-    void publish(String mqttTopic, Message message, int qos, boolean retained);
 
     /**
      * 发起一个消息请求，并获取响应消息。
@@ -66,23 +60,35 @@ public interface Driver extends LifeCycle, NeedNodeId, NeedMessages {
 
     ////
 
-    @Builder
     final class Options {
 
-        final int sendStatIntervalSec;
-        final String[] eventTopics;
-        final String[] valueTopics;
-        final String[] customTopics;
+        final List<String> eventTopics;
+        final List<String> valueTopics;
+        final List<String> customTopics;
 
-        public Options(String[] eventTopics, String[] valueTopics, String[] customTopics) {
-            this(60, eventTopics, valueTopics, customTopics);
+        public Options() {
+            this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
         }
 
-        public Options(int sendStatIntervalSec, String[] eventTopics, String[] valueTopics, String[] customTopics) {
-            this.sendStatIntervalSec = sendStatIntervalSec;
-            this.eventTopics = eventTopics;
-            this.valueTopics = valueTopics;
-            this.customTopics = customTopics;
+        public Options(List<String> eventTopics, List<String> valueTopics, List<String> customTopics) {
+            this.eventTopics = eventTopics == null ? Collections.emptyList() : eventTopics;
+            this.valueTopics = valueTopics == null ? Collections.emptyList() : valueTopics;
+            this.customTopics = customTopics == null ? Collections.emptyList() : customTopics;
+        }
+
+        public Options addEventTopic(String topic) {
+            eventTopics.add(topic);
+            return this;
+        }
+
+        public Options addValueTopic(String topic) {
+            valueTopics.add(topic);
+            return this;
+        }
+
+        public Options addCustomTopic(String topic) {
+            customTopics.add(topic);
+            return this;
         }
     }
 }

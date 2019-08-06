@@ -27,7 +27,6 @@ final public class Topics {
      */
     public static final String SubscribeNodesOffline = prefixNodes + "offline";
 
-
     /**
      * 节点发出TriggerEvent事件的订阅Topic
      */
@@ -43,23 +42,23 @@ final public class Topics {
      */
     public static final String SubscribeNodesStats = prefixStats + "stats/#";
 
-    static final String PublishNodesOffline = SubscribeNodesOffline;
+    public static final String PublishNodesOffline = SubscribeNodesOffline;
 
     private Topics() {
     }
     ////
 
-    static String formatEvents(String topic) {
+    public static String formatEvents(String topic) {
         checkTopic(topic);
         return prefixEvents + topic;
     }
 
-    static String formatValues(String topic) {
+    public static String formatValues(String topic) {
         checkTopic(topic);
         return prefixValues + topic;
     }
 
-    static String formatStats(String topic) {
+    public static String formatStats(String topic) {
         checkTopic(topic);
         return prefixStats + topic;
     }

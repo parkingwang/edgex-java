@@ -3,7 +3,7 @@ package net.nextabc.edgex;
 /**
  * @author 陈哈哈 (yoojiachen@gmail.com)
  */
-public interface NeedNodeId {
+public interface NodeId {
 
     String nodeId();
 }

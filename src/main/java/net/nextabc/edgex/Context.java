@@ -10,7 +10,7 @@ import java.util.concurrent.TimeoutException;
  * @author 陈永佳 (yoojiachen@gmail.com)
  * @version 0.0.1
  */
-public interface Context extends NeedNodeId {
+public interface Context extends NodeId {
 
     String EnvKeyMQBroker = "EDGEX_MQTT_BROKER";
     String EnvKeyMQUsername = "EDGEX_MQTT_USERNAME";

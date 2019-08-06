@@ -43,16 +43,13 @@ final class DriverImpl implements Driver {
         this.statsTimer = new Timer("DriverStatsTimer");
         // topics
         final List<String> topics = new ArrayList<>();
-        final String[] empty = new String[0];
-        for (String topic : (options.eventTopics == null ? empty : options.eventTopics)) {
+        for (String topic : options.eventTopics) {
             topics.add(Topics.formatEvents(topic));
         }
-        for (String topic : (options.valueTopics == null ? empty : options.valueTopics)) {
+        for (String topic : options.valueTopics) {
             topics.add(Topics.formatValues(topic));
         }
-        if (options.customTopics != null && options.customTopics.length > 0) {
-            topics.addAll(Arrays.asList(options.customTopics));
-        }
+        topics.addAll(options.customTopics);
         this.mqttTopics = topics.toArray(new String[0]);
     }
 
@@ -67,8 +64,24 @@ final class DriverImpl implements Driver {
     }
 
     @Override
-    public void publish(String mqttTopic, Message msg, int qos, boolean retained) {
-        this.publishMQTT(mqttTopic, msg, qos, retained);
+    public void publishMqtt(String mqttTopic, Message msg, int qos, boolean retained) {
+        this.mqttPublishMessage(mqttTopic, msg, qos, retained);
+    }
+
+    @Override
+    public void publishEvents(String topic, Message message) {
+        this.mqttPublishMessage(Topics.formatEvents(topic),
+                message,
+                this.globals.getMqttQoS(),
+                this.globals.isMqttRetained());
+    }
+
+    @Override
+    public void publishValues(String topic, Message message) {
+        this.mqttPublishMessage(Topics.formatValues(topic),
+                message,
+                this.globals.getMqttQoS(),
+                this.globals.isMqttRetained());
     }
 
     @Override
@@ -140,7 +153,8 @@ final class DriverImpl implements Driver {
 
             @Override
             public void run() {
-                publishMQTT(mqttTopic,
+                mqttPublishMessage(
+                        mqttTopic,
                         nextMessageBy(nodeId, stats.toJSONString().getBytes()),
                         0,
                         false);
@@ -181,7 +195,7 @@ final class DriverImpl implements Driver {
     @Override
     public void call(String remoteNodeId, Message in, Callback callback) {
         log.debug("MQ_RPC调用Endpoint.NodeId: " + remoteNodeId);
-        publishMQTT(
+        mqttPublishMessage(
                 Topics.formatRequestSend(remoteNodeId, this.nodeId),
                 in,
                 this.globals.getMqttQoS(),
@@ -197,7 +211,7 @@ final class DriverImpl implements Driver {
         });
     }
 
-    private void publishMQTT(String mqttTopic, Message msg, int qos, boolean retained) {
+    private void mqttPublishMessage(String mqttTopic, Message msg, int qos, boolean retained) {
         final MqttClient mqtt = Objects.requireNonNull(this.mqttClientRef, "Mqtt客户端尚未启动");
         try {
             mqtt.publish(
