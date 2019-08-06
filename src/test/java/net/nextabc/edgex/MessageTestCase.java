@@ -12,7 +12,7 @@ public class MessageTestCase {
 
     @Test
     public void test() {
-        Message msg = Message.fromBytes("CHEN", "NODE", body, 2019);
+        Message msg = Message.newMessageWith("CHEN", "NODE", body, 2019);
         check(msg);
         Message passed = Message.parse(msg.bytes());
         check(passed);
