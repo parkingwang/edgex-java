@@ -1,13 +1,12 @@
 package net.nextabc.edgex;
 
+import net.nextabc.edgex.internal.MessageRouter;
 import org.apache.log4j.Logger;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,7 +29,7 @@ final class DriverImpl implements Driver {
     private final AtomicInteger sequenceId = new AtomicInteger(0);
     private final List<OnStartupListener<Driver>> startupListeners = new ArrayList<>(0);
     private final List<OnShutdownListener<Driver>> shutdownListeners = new ArrayList<>(0);
-    private final Router router = new Router();
+    private final MessageRouter router = new MessageRouter();
 
     private final MqttClient mqttClientRef;
     private final String nodeId;
@@ -177,17 +176,21 @@ final class DriverImpl implements Driver {
     }
 
     @Override
-    public void call(String remoteNodeId, Message in, Callback cb) {
+    public void call(String remoteNodeId, Message in, Callback callback) {
         log.debug("MQ_RPC调用Endpoint.NodeId: " + remoteNodeId);
         publishMQTT(
-                Topics.formatRequestSend(remoteNodeId, in.sequenceId(), this.nodeId),
+                Topics.formatRequestSend(remoteNodeId, this.nodeId),
                 in,
                 this.globals.getMqttQoS(),
                 false
         );
-        final String topic = Topics.formatRepliesFilter(remoteNodeId, in.sequenceId(), this.nodeId);
-        this.router.register(topic, (t, msg) -> {
-            cb.onMessage(Message.parse(msg.getPayload()));
+        final String topic = Topics.formatRepliesFilter(remoteNodeId, this.nodeId);
+        this.router.register(topic, (msg) -> {
+            final boolean match = in.sequenceId() == msg.sequenceId();
+            if (match) {
+                callback.onMessage(msg);
+            }
+            return match;
         });
     }
 
@@ -243,30 +246,6 @@ final class DriverImpl implements Driver {
         public void set(T value) {
             this.value = value;
         }
-    }
-
-    ////
-
-    private static class Router {
-
-        private final Map<String, RouterHandler> handlers = new ConcurrentHashMap<>();
-
-        void dispatchThenRemove(String topic, MqttMessage msg) {
-            final RouterHandler cb = handlers.remove(topic);
-            if (cb != null) {
-                cb.onMessage(topic, msg);
-            }
-        }
-
-        void register(String topic, RouterHandler callback) {
-            handlers.put(topic, callback);
-        }
-    }
-
-    ////
-
-    private interface RouterHandler {
-        void onMessage(String topic, MqttMessage msg);
     }
 
 }

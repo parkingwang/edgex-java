@@ -25,7 +25,8 @@ final public class Topics {
     /**
      * 节点发出Offline事件的订阅Topic
      */
-    public static final String SubscribeNodesOffline = prefixNodes + "offline/#";
+    public static final String SubscribeNodesOffline = prefixNodes + "offline";
+
 
     /**
      * 节点发出TriggerEvent事件的订阅Topic
@@ -41,6 +42,8 @@ final public class Topics {
      * 节点发出数据统计Event事件的订阅Topic
      */
     public static final String SubscribeNodesStats = prefixStats + "stats/#";
+
+    static final String PublishNodesOffline = SubscribeNodesOffline;
 
     private Topics() {
     }
@@ -59,10 +62,6 @@ final public class Topics {
     static String formatStats(String topic) {
         checkTopic(topic);
         return prefixStats + topic;
-    }
-
-    static String formatOffline(String typeName, String name) {
-        return String.format(prefixNodes + "offline/%s/%s", typeName, name);
     }
 
     static String unwrapEdgeXTopic(String mqttRawTopic) {
@@ -84,15 +83,15 @@ final public class Topics {
     }
 
     static String formatRepliesListen(String callerNodeId) {
-        return String.format(prefixReplies + "%s/+/+", callerNodeId);
+        return prefixReplies + callerNodeId + "/+";
     }
 
-    static String formatRequestSend(String executorNodeId, int seqId, String callerNodeId) {
-        return String.format(prefixRequests + "%s/%d/%s", executorNodeId, seqId, callerNodeId);
+    static String formatRepliesFilter(String executorNodeId, String callerNodeId) {
+        return prefixReplies + callerNodeId + "/" + executorNodeId;
     }
 
-    static String formatRepliesFilter(String executorNodeId, int seqId, String callerNodeId) {
-        return String.format(prefixReplies + "%s/%d/%s", callerNodeId, seqId, executorNodeId);
+    static String formatRequestSend(String executorNodeId, String callerNodeId) {
+        return prefixRequests + executorNodeId + "/" + callerNodeId;
     }
 
     private static void checkTopic(String topic) {
