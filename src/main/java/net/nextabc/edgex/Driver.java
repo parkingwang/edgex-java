@@ -1,5 +1,7 @@
 package net.nextabc.edgex;
 
+import lombok.Builder;
+
 /**
  * @author 陈永佳 (yoojiachen@gmail.com)
  * @version 0.0.1
@@ -64,6 +66,7 @@ public interface Driver extends LifeCycle, NeedNodeId, NeedMessages {
 
     ////
 
+    @Builder
     final class Options {
 
         final int sendStatIntervalSec;
@@ -71,7 +74,7 @@ public interface Driver extends LifeCycle, NeedNodeId, NeedMessages {
         final String[] valueTopics;
         final String[] customTopics;
 
-        public Options(String[] eventTopics, String[] customTopics, String[] valueTopics) {
+        public Options(String[] eventTopics, String[] valueTopics, String[] customTopics) {
             this(60, eventTopics, valueTopics, customTopics);
         }
 

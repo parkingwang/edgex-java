@@ -43,13 +43,16 @@ final class DriverImpl implements Driver {
         this.statsTimer = new Timer("DriverStatsTimer");
         // topics
         final List<String> topics = new ArrayList<>();
-        for (String topic : options.eventTopics) {
+        final String[] empty = new String[0];
+        for (String topic : (options.eventTopics == null ? empty : options.eventTopics)) {
             topics.add(Topics.formatEvents(topic));
         }
-        for (String topic : options.valueTopics) {
+        for (String topic : (options.valueTopics == null ? empty : options.valueTopics)) {
             topics.add(Topics.formatValues(topic));
         }
-        topics.addAll(Arrays.asList(options.customTopics));
+        if (options.customTopics != null && options.customTopics.length > 0) {
+            topics.addAll(Arrays.asList(options.customTopics));
+        }
         this.mqttTopics = topics.toArray(new String[0]);
     }
 
