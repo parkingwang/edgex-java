@@ -7,7 +7,9 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -30,6 +32,7 @@ final class DriverImpl implements Driver {
     private final List<OnStartupListener<Driver>> startupListeners = new ArrayList<>(0);
     private final List<OnShutdownListener<Driver>> shutdownListeners = new ArrayList<>(0);
     private final MessageRouter router = new MessageRouter();
+    private final ExecutorService async = Executors.newFixedThreadPool(2);
 
     private final MqttClient mqttClientRef;
     private final String nodeId;
@@ -145,7 +148,7 @@ final class DriverImpl implements Driver {
         try {
             this.mqttClientRef.subscribe(
                     Topics.formatRepliesListen(this.nodeId),
-                    router::dispatchThenRemove);
+                    router::dispatch);
         } catch (MqttException e) {
             log.fatal("监听RPC事件出错：", e);
         }
@@ -188,18 +191,11 @@ final class DriverImpl implements Driver {
 
     @Override
     public Message execute(String remoteNodeId, Message in, int timeoutSec) throws Exception {
-        final CountDownLatch cdl = new CountDownLatch(1);
-        final Wrap<Message> outW = new Wrap<>();
-        this.call(remoteNodeId, in, out -> {
-            outW.set(out);
-            cdl.countDown();
-        });
-        cdl.await(timeoutSec, TimeUnit.SECONDS);
-        return outW.get();
+        return call(remoteNodeId, in).get(timeoutSec, TimeUnit.SECONDS);
     }
 
     @Override
-    public void call(String remoteNodeId, Message in, Callback callback) {
+    public CompletableFuture<Message> call(String remoteNodeId, Message in) {
         log.debug("MQ_RPC调用Endpoint.NodeId: " + remoteNodeId);
         mqttPublishMessage(
                 Topics.formatRequestSend(remoteNodeId, this.nodeId),
@@ -207,14 +203,9 @@ final class DriverImpl implements Driver {
                 this.globals.getMqttQoS(),
                 false
         );
-        final String topic = Topics.formatRepliesFilter(remoteNodeId, this.nodeId);
-        this.router.register(topic, (msg) -> {
-            final boolean match = in.sequenceId() == msg.sequenceId();
-            if (match) {
-                callback.onMessage(msg);
-            }
-            return match;
-        });
+        return this.router.register(
+                Topics.formatRepliesFilter(remoteNodeId, this.nodeId),
+                (msg) -> in.sequenceId() == msg.sequenceId());
     }
 
     private void mqttPublishMessage(String mqttTopic, Message msg, int qos, boolean retained) {
@@ -238,7 +229,7 @@ final class DriverImpl implements Driver {
         private int recvCount;
         private long recvBytes;
 
-        public void up() {
+        void up() {
             this.uptime = System.currentTimeMillis();
         }
 
@@ -254,20 +245,6 @@ final class DriverImpl implements Driver {
                     ", \"recvCount\":  " + this.recvCount +
                     ", \"recvBytes\":  " + this.recvBytes +
                     "}";
-        }
-    }
-
-    ////
-
-    private static class Wrap<T> {
-        private T value;
-
-        public T get() {
-            return value;
-        }
-
-        public void set(T value) {
-            this.value = value;
         }
     }
 

@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
- * @author 陈永佳 (yoojiachen@gmail.com)
- * @version 0.0.1
+ * @author 陈哈哈 (yoojiachen@gmail.com)
  */
 public interface Driver extends LifeCycle, NodeId, Messaging, Publishable {
 
@@ -34,9 +34,8 @@ public interface Driver extends LifeCycle, NodeId, Messaging, Publishable {
      *
      * @param remoteNodeId 远程节点ID
      * @param in           Message
-     * @param cb           回调接口
      */
-    void call(String remoteNodeId, Message in, Callback cb);
+    CompletableFuture<Message> call(String remoteNodeId, Message in);
 
     /**
      * 添加Startup监听接口
@@ -51,13 +50,6 @@ public interface Driver extends LifeCycle, NodeId, Messaging, Publishable {
      * @param l 监听接口
      */
     void addShutdownListener(OnShutdownListener<Driver> l);
-
-    ////
-
-    @FunctionalInterface
-    interface Callback {
-        void onMessage(Message out);
-    }
 
     ////
 
