@@ -72,12 +72,12 @@ final class DriverImpl implements Driver {
 
     @Override
     public void publishMqtt(String mqttTopic, Message msg, int qos, boolean retained) {
-        this.mqttPublishMessage(mqttTopic, msg, qos, retained);
+        this.tryPublishMqtt(mqttTopic, msg, qos, retained);
     }
 
     @Override
     public void publishEvents(String topic, Message message) {
-        this.mqttPublishMessage(Topics.formatEvents(topic),
+        this.tryPublishMqtt(Topics.formatEvents(topic),
                 message,
                 this.globals.getMqttQoS(),
                 this.globals.isMqttRetained());
@@ -85,7 +85,7 @@ final class DriverImpl implements Driver {
 
     @Override
     public void publishValues(String topic, Message message) {
-        this.mqttPublishMessage(Topics.formatValues(topic),
+        this.tryPublishMqtt(Topics.formatValues(topic),
                 message,
                 this.globals.getMqttQoS(),
                 this.globals.isMqttRetained());
@@ -160,11 +160,15 @@ final class DriverImpl implements Driver {
 
             @Override
             public void run() {
-                mqttPublishMessage(
-                        mqttTopic,
-                        nextMessageBy(nodeId, stats.toJSONString().getBytes()),
-                        0,
-                        false);
+                try {
+                    mqttPublishMessage(
+                            mqttTopic,
+                            nextMessageBy(nodeId, stats.toJSONString().getBytes()),
+                            0,
+                            false);
+                } catch (MqttException e) {
+                    log.debug("定时上报Stats消息，MQTT发送错误：", e);
+                }
             }
         }, 3000, 1000 * 10);
 
@@ -197,28 +201,46 @@ final class DriverImpl implements Driver {
     @Override
     public CompletableFuture<Message> call(String remoteNodeId, Message in) {
         log.debug("MQ_RPC调用Endpoint.NodeId: " + remoteNodeId);
-        mqttPublishMessage(
-                Topics.formatRequestSend(remoteNodeId, this.nodeId),
-                in,
-                this.globals.getMqttQoS(),
-                false
-        );
+        try {
+            mqttPublishMessage(
+                    Topics.formatRequestSend(remoteNodeId, this.nodeId),
+                    in,
+                    this.globals.getMqttQoS(),
+                    false
+            );
+        } catch (MqttException e) {
+            log.error("MQ_RPC调用，发送MQTT消息出错", e);
+            return CompletableFuture.completedFuture(null);
+        }
         return this.router.register(
                 Topics.formatRepliesFilter(remoteNodeId, this.nodeId),
                 (msg) -> in.sequenceId() == msg.sequenceId());
     }
 
-    private void mqttPublishMessage(String mqttTopic, Message msg, int qos, boolean retained) {
-        final MqttClient mqtt = Objects.requireNonNull(this.mqttClientRef, "Mqtt客户端尚未启动");
-        try {
-            mqtt.publish(
-                    mqttTopic,
-                    msg.bytes(),
-                    qos,
-                    retained);
-        } catch (MqttException e) {
-            log.error("发送MQTT消息出错: " + mqttTopic, e);
+    private void tryPublishMqtt(String mqttTopic, Message msg, int qos, boolean retained) {
+        for (int i = 0; i < 5; i++) {
+            try {
+                mqttPublishMessage(mqttTopic, msg, qos, retained);
+                return;
+            } catch (MqttException e) {
+                log.error(String.format("[%d]发送MQTT消息失败，重试发送", i), e);
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException ex) {
+                    log.error("重试发送MQTT消息被中断");
+                    return;
+                }
+            }
         }
+    }
+
+    private void mqttPublishMessage(String mqttTopic, Message msg, int qos, boolean retained) throws MqttException {
+        final MqttClient mqtt = Objects.requireNonNull(this.mqttClientRef, "Mqtt客户端尚未启动");
+        mqtt.publish(
+                mqttTopic,
+                msg.bytes(),
+                qos,
+                retained);
     }
 
     ////
