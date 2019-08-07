@@ -1,5 +1,7 @@
 package net.nextabc.edgex;
 
+import org.eclipse.paho.client.mqttv3.MqttException;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -9,7 +11,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * @author 陈哈哈 (yoojiachen@gmail.com)
  */
-public interface Driver extends LifeCycle, NodeId, Messaging, Publishable {
+public interface Driver extends LifeCycle, NodeId, Messaging {
 
     /**
      * 处理消息
@@ -17,6 +19,41 @@ public interface Driver extends LifeCycle, NodeId, Messaging, Publishable {
      * @param handler 处理函数
      */
     void process(DriverHandler handler);
+
+    /**
+     * 发送MQTT消息
+     *
+     * @param mqttTopic MQTT完整Topic
+     * @param message   消息
+     * @throws MqttException Mqtt发送错误
+     */
+    void publishMqtt(String mqttTopic, Message message, int qos, boolean retained) throws MqttException;
+
+    /**
+     * 发送Events消息
+     *
+     * @param topic   Topic
+     * @param message Message数据
+     * @throws MqttException Mqtt发送错误
+     */
+    void publishEvent(String topic, Message message) throws MqttException;
+
+    /**
+     * 发送Values消息
+     *
+     * @param topic   Topic
+     * @param message Message数据
+     * @throws MqttException Mqtt发送错误
+     */
+    void publishValue(String topic, Message message) throws MqttException;
+
+    /**
+     * 发送Stats消息
+     *
+     * @param message Message数据
+     * @throws MqttException Mqtt发送错误
+     */
+    void publishStats(Message message) throws MqttException;
 
     /**
      * 发起一个同步调用消息请求，并获取响应消息。

@@ -25,7 +25,7 @@ public class MessageRouter {
             return;
         }
         final Message msg = Message.parse(mqtt.getPayload());
-        list.removeIf(r -> r.tryInvoke(msg));
+        list.removeIf(r -> r.invoke(msg));
     }
 
     public CompletableFuture<Message> register(String topic, Predicate<Message> predicate) {
@@ -49,7 +49,7 @@ public class MessageRouter {
             this.predicate = predicate;
         }
 
-        boolean tryInvoke(Message msg) {
+        boolean invoke(Message msg) {
             if (predicate.test(msg)) {
                 future.complete(msg);
                 return true;

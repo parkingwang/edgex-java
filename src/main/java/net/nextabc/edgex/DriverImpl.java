@@ -21,10 +21,8 @@ final class DriverImpl implements Driver {
 
     private final Globals globals;
 
-    private final Timer statsTimer;
-
     private final String[] mqttTopics;
-    private final Stats stats = new Stats();
+
 
     private final AtomicInteger sequenceId = new AtomicInteger(0);
     private final List<OnStartupListener<Driver>> startupListeners = new ArrayList<>(0);
@@ -34,13 +32,21 @@ final class DriverImpl implements Driver {
     private final MqttClient mqttClientRef;
     private final String nodeId;
 
+    private final Stats stats = new Stats();
+    private final String statsMqttTopic;
+    private final Timer statsTimer;
+
+
     private DriverHandler handler;
 
     DriverImpl(String nodeId, MqttClient mqttClient, Globals globals, Options options) {
         this.nodeId = nodeId;
         this.mqttClientRef = mqttClient;
         this.globals = Objects.requireNonNull(globals);
+
         this.statsTimer = new Timer("DriverStatsTimer");
+        this.statsMqttTopic = Topics.formatStats(nodeId);
+
         // topics
         final List<String> topics = new ArrayList<>();
         for (String topic : options.eventTopics) {
@@ -68,24 +74,33 @@ final class DriverImpl implements Driver {
     }
 
     @Override
-    public void publishMqtt(String mqttTopic, Message msg, int qos, boolean retained) {
-        this.tryPublishMqtt(mqttTopic, msg, qos, retained);
+    public void publishMqtt(String mqttTopic, Message msg, int qos, boolean retained) throws MqttException {
+        this.mqttPublishMessage(mqttTopic, msg, qos, retained);
     }
 
     @Override
-    public void publishEvents(String topic, Message message) {
-        this.tryPublishMqtt(Topics.formatEvents(topic),
+    public void publishEvent(String topic, Message message) throws MqttException {
+        this.mqttPublishMessage(Topics.formatEvents(topic),
                 message,
                 this.globals.getMqttQoS(),
                 this.globals.isMqttRetained());
     }
 
     @Override
-    public void publishValues(String topic, Message message) {
-        this.tryPublishMqtt(Topics.formatValues(topic),
+    public void publishValue(String topic, Message message) throws MqttException {
+        this.mqttPublishMessage(Topics.formatValues(topic),
                 message,
                 this.globals.getMqttQoS(),
                 this.globals.isMqttRetained());
+    }
+
+    @Override
+    public void publishStats(Message message) throws MqttException {
+        mqttPublishMessage(
+                statsMqttTopic,
+                message,
+                0,
+                false);
     }
 
     @Override
@@ -153,16 +168,10 @@ final class DriverImpl implements Driver {
         // 定时发送Stats
         this.statsTimer.scheduleAtFixedRate(new TimerTask() {
 
-            private final String mqttTopic = Topics.formatStats(nodeId);
-
             @Override
             public void run() {
                 try {
-                    mqttPublishMessage(
-                            mqttTopic,
-                            nextMessageBy(nodeId, stats.toJSONString().getBytes()),
-                            0,
-                            false);
+                    publishStats(nextMessageBy(nodeId, stats.toJSONString().getBytes()));
                 } catch (MqttException e) {
                     log.debug("定时上报Stats消息，MQTT发送错误：", e);
                 }
@@ -216,23 +225,6 @@ final class DriverImpl implements Driver {
         }
         final String topic = Topics.formatRepliesFilter(remoteNodeId, this.nodeId);
         return this.router.register(topic, msg -> seqId == msg.sequenceId());
-    }
-
-    private void tryPublishMqtt(String mqttTopic, Message msg, int qos, boolean retained) {
-        for (int i = 0; i < 5; i++) {
-            try {
-                mqttPublishMessage(mqttTopic, msg, qos, retained);
-                return;
-            } catch (MqttException e) {
-                log.error(String.format("[%d]发送MQTT消息失败，重试发送", i), e);
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException ex) {
-                    log.error("重试发送MQTT消息被中断");
-                    return;
-                }
-            }
-        }
     }
 
     private void mqttPublishMessage(String mqttTopic, Message msg, int qos, boolean retained) throws MqttException {
