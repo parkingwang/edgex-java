@@ -42,22 +42,20 @@ public class EdgeX {
     }
 
     public static Globals createDefaultGlobals() {
-        return new Globals(
-                Env.getString(EnvKeyMQBroker, Context.MqttBrokerDefault),
-                Env.getString(EnvKeyMQUsername, null),
-                Env.getString(EnvKeyMQPassword, null),
-                Env.getInt(EnvKeyMQQOS, 1),
-                Env.getBoolean(EnvKeyMQRetained, false),
-                true,
-                Env.getBoolean(EnvKeyMQCleanSession, true),
-                3,
-                3,
-                5,
-                3,
-                120,
-                true,
-                30,
-                1000 * 60 * 60 * 6);
+        return Globals.builder()
+                .mqttBroker(Env.getString(EnvKeyMQBroker, Context.MqttBrokerDefault))
+                .mqttUsername(Env.getString(EnvKeyMQUsername, null))
+                .mqttPassword(Env.getString(EnvKeyMQPassword, null))
+                .mqttQoS(Env.getInt(EnvKeyMQQOS, 0))
+                .mqttRetained(Env.getBoolean(EnvKeyMQRetained, false))
+                .mqttClearSession(Env.getBoolean(EnvKeyMQCleanSession, true))
+                .mqttAutoReconnect(true)
+                .mqttKeepAlive(3)
+                .mqttPingTimeout(3)
+                .mqttConnectTimeout(5)
+                .mqttReconnectInterval(5)
+                .mqttMaxRetry(30)
+                .build();
     }
 
 }
