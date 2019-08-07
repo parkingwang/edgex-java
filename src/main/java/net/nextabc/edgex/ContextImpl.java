@@ -49,6 +49,9 @@ final class ContextImpl implements Context {
         // 更新Globals
         final ImmutableMap g = config.getImmutableMap("Globals");
         if (g.isNotEmpty()) {
+            if (g.containsKey("LogVerbose")) {
+                globals.setLogVerbose(g.getBoolean("LogVerbose"));
+            }
             if (g.containsKey("MqttBroker")) {
                 globals.setMqttBroker(g.getString("MqttBroker"));
             }

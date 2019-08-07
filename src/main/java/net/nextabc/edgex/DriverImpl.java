@@ -199,8 +199,9 @@ final class DriverImpl implements Driver {
     public CompletableFuture<Message> call(String remoteNodeId, String remoteVirtualNodeId, byte[] body) {
         final Message req = nextMessageOf(remoteVirtualNodeId, body);
         final int seqId = req.sequenceId();
-
-        log.debug("MQ_RPC调用，RemoteNodeId: " + remoteNodeId + ", SeqId: " + seqId);
+        if (globals.isLogVerbose()) {
+            log.debug("MQ_RPC调用，RemoteNodeId: " + remoteNodeId + ", SeqId: " + seqId);
+        }
         try {
             mqttPublishMessage(
                     Topics.formatRequestSend(remoteNodeId, this.nodeId),
@@ -211,7 +212,7 @@ final class DriverImpl implements Driver {
         } catch (MqttException e) {
             log.error("MQ_RPC调用，发送MQTT消息出错", e);
             return CompletableFuture.completedFuture(
-                    nextMessageBy("ERROR", ("MQ_RPC_MQTT_ERR:" + e.getMessage()).getBytes()));
+                    nextMessageOf(remoteVirtualNodeId, ("MQ_RPC_MQTT_ERR:" + e.getMessage()).getBytes()));
         }
         final String topic = Topics.formatRepliesFilter(remoteNodeId, this.nodeId);
         return this.router.register(topic, msg -> seqId == msg.sequenceId());
