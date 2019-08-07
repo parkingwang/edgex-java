@@ -25,6 +25,8 @@ public interface Driver extends LifeCycle, NodeId, Messaging {
      *
      * @param mqttTopic MQTT完整Topic
      * @param message   消息
+     * @param qos       Mqtt Qos
+     * @param retained  Mqtt retained
      * @throws MqttException Mqtt发送错误
      */
     void publishMqtt(String mqttTopic, Message message, int qos, boolean retained) throws MqttException;
@@ -73,6 +75,7 @@ public interface Driver extends LifeCycle, NodeId, Messaging {
      * @param remoteNodeId        　目标Endpoint的地址
      * @param remoteVirtualNodeId 　目标Virtual Node id
      * @param body                　Body
+     * @return CompletableFuture
      */
     CompletableFuture<Message> call(String remoteNodeId, String remoteVirtualNodeId, byte[] body);
 
