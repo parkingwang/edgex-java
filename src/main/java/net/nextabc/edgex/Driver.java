@@ -19,23 +19,25 @@ public interface Driver extends LifeCycle, NodeId, Messaging, Publishable {
     void process(DriverHandler handler);
 
     /**
-     * 发起一个消息请求，并获取响应消息。
+     * 发起一个同步调用消息请求，并获取响应消息。
      *
-     * @param remoteNodeId 　目标Endpoint的地址
-     * @param in           　请求消息
-     * @param timeoutSec   　请求超时时间
+     * @param remoteNodeId        　目标Endpoint的地址
+     * @param remoteVirtualNodeId 　目标Virtual Node id
+     * @param body                　Body
+     * @param timeoutSec          　请求超时时间
      * @return 响应消息
      * @throws Exception 如果过程中发生错误，返回错误消息
      */
-    Message execute(String remoteNodeId, Message in, int timeoutSec) throws Exception;
+    Message execute(String remoteNodeId, String remoteVirtualNodeId, byte[] body, int timeoutSec) throws Exception;
 
     /**
-     * 发起一个异步请求
+     * 发起一个异步请求，返回CompletableFuture对象
      *
-     * @param remoteNodeId 远程节点ID
-     * @param in           Message
+     * @param remoteNodeId        　目标Endpoint的地址
+     * @param remoteVirtualNodeId 　目标Virtual Node id
+     * @param body                　Body
      */
-    CompletableFuture<Message> call(String remoteNodeId, Message in);
+    CompletableFuture<Message> call(String remoteNodeId, String remoteVirtualNodeId, byte[] body);
 
     /**
      * 添加Startup监听接口

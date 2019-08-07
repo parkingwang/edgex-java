@@ -8,8 +8,6 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -32,7 +30,6 @@ final class DriverImpl implements Driver {
     private final List<OnStartupListener<Driver>> startupListeners = new ArrayList<>(0);
     private final List<OnShutdownListener<Driver>> shutdownListeners = new ArrayList<>(0);
     private final MessageRouter router = new MessageRouter();
-    private final ExecutorService async = Executors.newFixedThreadPool(2);
 
     private final MqttClient mqttClientRef;
     private final String nodeId;
@@ -148,7 +145,7 @@ final class DriverImpl implements Driver {
         try {
             this.mqttClientRef.subscribe(
                     Topics.formatRepliesListen(this.nodeId),
-                    router::dispatch);
+                    router::route);
         } catch (MqttException e) {
             log.fatal("监听RPC事件出错：", e);
         }
@@ -194,27 +191,30 @@ final class DriverImpl implements Driver {
     }
 
     @Override
-    public Message execute(String remoteNodeId, Message in, int timeoutSec) throws Exception {
-        return call(remoteNodeId, in).get(timeoutSec, TimeUnit.SECONDS);
+    public Message execute(String remoteNodeId, String remoteVirtualNodeId, byte[] body, int timeoutSec) throws Exception {
+        return call(remoteNodeId, remoteVirtualNodeId, body).get(timeoutSec, TimeUnit.SECONDS);
     }
 
     @Override
-    public CompletableFuture<Message> call(String remoteNodeId, Message in) {
-        log.debug("MQ_RPC调用Endpoint.NodeId: " + remoteNodeId);
+    public CompletableFuture<Message> call(String remoteNodeId, String remoteVirtualNodeId, byte[] body) {
+        final Message req = nextMessageOf(remoteVirtualNodeId, body);
+        final int seqId = req.sequenceId();
+
+        log.debug("MQ_RPC调用，RemoteNodeId: " + remoteNodeId + ", SeqId: " + seqId);
         try {
             mqttPublishMessage(
                     Topics.formatRequestSend(remoteNodeId, this.nodeId),
-                    in,
+                    req,
                     this.globals.getMqttQoS(),
                     false
             );
         } catch (MqttException e) {
             log.error("MQ_RPC调用，发送MQTT消息出错", e);
-            return CompletableFuture.completedFuture(null);
+            return CompletableFuture.completedFuture(
+                    nextMessageBy("ERROR", ("MQ_RPC_MQTT_ERR:" + e.getMessage()).getBytes()));
         }
-        return this.router.register(
-                Topics.formatRepliesFilter(remoteNodeId, this.nodeId),
-                (msg) -> in.sequenceId() == msg.sequenceId());
+        final String topic = Topics.formatRepliesFilter(remoteNodeId, this.nodeId);
+        return this.router.register(topic, msg -> seqId == msg.sequenceId());
     }
 
     private void tryPublishMqtt(String mqttTopic, Message msg, int qos, boolean retained) {
