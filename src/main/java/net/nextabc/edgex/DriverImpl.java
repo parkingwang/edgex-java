@@ -36,7 +36,7 @@ final class DriverImpl implements Driver {
     private final String statsMqttTopic;
     private final Timer statsTimer;
 
-
+    private boolean stateStarted = false;
     private DriverHandler handler;
 
     DriverImpl(String nodeId, MqttClient mqttClient, Globals globals, Options options) {
@@ -130,6 +130,7 @@ final class DriverImpl implements Driver {
 
     @Override
     public void startup() {
+        this.stateStarted = true;
         this.startupListeners.forEach(l -> l.onBefore(this));
         this.stats.up();
 
@@ -197,6 +198,7 @@ final class DriverImpl implements Driver {
         this.statsTimer.cancel();
         this.statsTimer.purge();
         this.shutdownListeners.forEach(l -> l.onAfter(this));
+        this.stateStarted = false;
     }
 
     @Override
@@ -206,6 +208,7 @@ final class DriverImpl implements Driver {
 
     @Override
     public CompletableFuture<Message> call(String remoteNodeId, String remoteVirtualNodeId, byte[] body) {
+        checkState();
         final Message req = nextMessageOf(remoteVirtualNodeId, body);
         final int seqId = req.sequenceId();
         if (globals.isLogVerbose()) {
@@ -228,12 +231,19 @@ final class DriverImpl implements Driver {
     }
 
     private void mqttPublishMessage(String mqttTopic, Message msg, int qos, boolean retained) throws MqttException {
+        checkState();
         final MqttClient mqtt = Objects.requireNonNull(this.mqttClientRef, "Mqtt客户端尚未启动");
         mqtt.publish(
                 mqttTopic,
                 msg.bytes(),
                 qos,
                 retained);
+    }
+
+    private void checkState() {
+        if (!this.stateStarted) {
+            log.fatal("Driver未启动，须调用startup()/shutdown()");
+        }
     }
 
     ////

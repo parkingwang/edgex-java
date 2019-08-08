@@ -123,6 +123,7 @@ final class ContextImpl implements Context {
         try {
             this.mqttClient.disconnect(500);
             this.mqttClient.close(true);
+            log.info("Mqtt客户端断开连接");
         } catch (MqttException e) {
             log.error("Mqtt客户端断开连接出错:", e);
         }
