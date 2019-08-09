@@ -11,7 +11,7 @@ import java.util.Map;
  */
 @Data
 @Builder
-class VirtualNodeProperties {
+public class VirtualNodeProperties {
 
     private final String uuid;
     private final String virtualId;
