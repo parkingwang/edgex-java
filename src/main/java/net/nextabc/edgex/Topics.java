@@ -9,75 +9,75 @@ import lombok.extern.log4j.Log4j;
 @Log4j
 final public class Topics {
 
-    private static final String prefixNodes = "$EdgeX/nodes/";
-
+    private static final String prefixProperties = "$EdgeX/properties/";
     private static final String prefixEvents = "$EdgeX/events/";
     private static final String prefixValues = "$EdgeX/values/";
-    private static final String prefixStats = "$EdgeX/stats/";
+    private static final String prefixStatistics = "$EdgeX/statistics/";
+    private static final String prefixStates = "$EdgeX/states/";
     private static final String prefixRequests = "$EdgeX/requests/";
     private static final String prefixReplies = "$EdgeX/replies/";
 
     /**
      * 节点Inspect事件的订阅Topic
      */
-    public static final String SubscribeNodesInspect = prefixNodes + "inspect";
-
-    /**
-     * 节点发出Offline事件的订阅Topic
-     */
-    public static final String SubscribeNodesOffline = prefixNodes + "offline";
+    public static final String SubscribeProperties = prefixProperties + "#";
 
     /**
      * 节点发出TriggerEvent事件的订阅Topic
      */
-    public static final String SubscribeNodesEvents = prefixEvents + "#";
+    public static final String SubscribeEvents = prefixEvents + "#";
 
     /**
      * 节点发出ValueEvent事件的订阅Topic
      */
-    public static final String SubscribeNodesValues = prefixValues + "#";
+    public static final String SubscribeValues = prefixValues + "#";
 
     /**
-     * 节点发出数据统计Event事件的订阅Topic
+     * 节点发出数据统计事件的订阅Topic
      */
-    public static final String SubscribeNodesStats = prefixStats + "stats/#";
-
-    public static final String PublishNodesOffline = SubscribeNodesOffline;
+    public static final String SubscribeStatistics = prefixStatistics + "#";
 
     private Topics() {
     }
     ////
 
-    public static String formatEvents(String topic) {
-        checkTopic(topic);
-        return prefixEvents + topic;
+    public static String formatEvents(String exTopic) {
+        checkTopic(exTopic);
+        return prefixEvents + exTopic;
     }
 
-    public static String formatValues(String topic) {
-        checkTopic(topic);
-        return prefixValues + topic;
+    public static String formatValues(String exTopic) {
+        checkTopic(exTopic);
+        return prefixValues + exTopic;
     }
 
-    public static String formatStats(String topic) {
-        checkTopic(topic);
-        return prefixStats + topic;
+    public static String formatState(String exTopic) {
+        checkTopic(exTopic);
+        return prefixStates + exTopic;
+    }
+
+    public static String formatStatistics(String nodeId) {
+        checkTopic(nodeId);
+        return prefixStatistics + nodeId;
     }
 
     static String unwrapEdgeXTopic(String mqttRawTopic) {
-        if (null != mqttRawTopic && (mqttRawTopic.startsWith("$EdgeX/"))) {
+        if (null != mqttRawTopic) {
             if (mqttRawTopic.startsWith(prefixEvents)) {
                 return mqttRawTopic.substring(prefixEvents.length());
-            } else if (mqttRawTopic.startsWith(prefixStats)) {
-                return mqttRawTopic.substring(prefixStats.length());
+            } else if (mqttRawTopic.startsWith(prefixStatistics)) {
+                return mqttRawTopic.substring(prefixStatistics.length());
             } else if (mqttRawTopic.startsWith(prefixValues)) {
                 return mqttRawTopic.substring(prefixValues.length());
-            } else if (mqttRawTopic.startsWith(prefixNodes)) {
-                return mqttRawTopic.substring(prefixNodes.length());
+            } else if (mqttRawTopic.startsWith(prefixProperties)) {
+                return mqttRawTopic.substring(prefixProperties.length());
+            } else if (mqttRawTopic.startsWith(prefixStates)) {
+                return mqttRawTopic.substring(prefixStates.length());
             } else {
                 return mqttRawTopic;
             }
         } else {
-            return mqttRawTopic;
+            return null;
         }
     }
 

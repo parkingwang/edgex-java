@@ -32,9 +32,9 @@ final class DriverImpl implements Driver {
     private final MqttClient mqttClientRef;
     private final String nodeId;
 
-    private final Stats stats = new Stats();
-    private final String statsMqttTopic;
-    private final Timer statsTimer;
+    private final Statistics statistics = new Statistics();
+    private final String statisticsMqttTopic;
+    private final Timer statisticsTimer;
 
     private boolean stateStarted = false;
     private DriverHandler handler;
@@ -44,8 +44,8 @@ final class DriverImpl implements Driver {
         this.mqttClientRef = mqttClient;
         this.globals = Objects.requireNonNull(globals);
 
-        this.statsTimer = new Timer("DriverStatsTimer");
-        this.statsMqttTopic = Topics.formatStats(nodeId);
+        this.statisticsTimer = new Timer("DriverStatisticsTimer");
+        this.statisticsMqttTopic = Topics.formatStatistics(nodeId);
 
         // topics
         final List<String> topics = new ArrayList<>();
@@ -95,10 +95,10 @@ final class DriverImpl implements Driver {
     }
 
     @Override
-    public void publishStats(Message message) throws MqttException {
+    public void publishStatistics(byte[] data) throws MqttException {
         mqttPublishMessage(
-                statsMqttTopic,
-                message,
+                statisticsMqttTopic,
+                nextMessageBy(this.nodeId, data),
                 0,
                 false);
     }
@@ -132,14 +132,14 @@ final class DriverImpl implements Driver {
     public void startup() {
         this.stateStarted = true;
         this.startupListeners.forEach(l -> l.onBefore(this));
-        this.stats.up();
+        this.statistics.up();
 
         if (this.mqttTopics.length > 0) {
             // 监听所有Trigger的UserTopic
             final IMqttMessageListener listener = (rawMqttTopic, message) -> {
                 final byte[] bytes = message.getPayload();
+                this.statistics.updateRecv(bytes.length);
                 final String topic = Topics.unwrapEdgeXTopic(rawMqttTopic);
-                this.stats.updateRecv(bytes.length);
                 try {
                     handler.handle(topic, Message.parse(bytes));
                 } catch (Exception e) {
@@ -167,12 +167,12 @@ final class DriverImpl implements Driver {
         }
 
         // 定时发送Stats
-        this.statsTimer.scheduleAtFixedRate(new TimerTask() {
+        this.statisticsTimer.scheduleAtFixedRate(new TimerTask() {
 
             @Override
             public void run() {
                 try {
-                    publishStats(nextMessageBy(nodeId, stats.toJSONString().getBytes()));
+                    publishStatistics(statistics.toJSONString().getBytes());
                 } catch (MqttException e) {
                     log.debug("定时上报Stats消息，MQTT发送错误：", e);
                 }
@@ -195,8 +195,8 @@ final class DriverImpl implements Driver {
             log.fatal("取消监听出错：", e);
         }
 
-        this.statsTimer.cancel();
-        this.statsTimer.purge();
+        this.statisticsTimer.cancel();
+        this.statisticsTimer.purge();
         this.shutdownListeners.forEach(l -> l.onAfter(this));
         this.stateStarted = false;
     }
@@ -248,7 +248,7 @@ final class DriverImpl implements Driver {
 
     ////
 
-    public static class Stats {
+    public static class Statistics {
 
         private long uptime;
         private int recvCount;

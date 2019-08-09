@@ -50,12 +50,12 @@ public interface Driver extends LifeCycle, NodeId, Messaging {
     void publishValue(String topic, Message message) throws MqttException;
 
     /**
-     * 发送Stats消息
+     * 发送Statistics消息
      *
-     * @param message Message数据
+     * @param data Statistics数据
      * @throws MqttException Mqtt发送错误
      */
-    void publishStats(Message message) throws MqttException;
+    void publishStatistics(byte[] data) throws MqttException;
 
     /**
      * 发起一个同步调用消息请求，并获取响应消息。
