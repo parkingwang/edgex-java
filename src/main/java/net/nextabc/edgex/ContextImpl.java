@@ -96,7 +96,12 @@ final class ContextImpl implements Context {
         }
         log.info("Mqtt客户端连接Broker: " + globals.getMqttBroker());
         final MqttConnectOptions opts = new MqttConnectOptions();
-        opts.setWill(Topics.PublishNodesOffline, nodeId.getBytes(), 0, true);
+        opts.setWill(Topics.formatStates(nodeId),
+                Mqtt.createStateMessage(VirtualNodeState.builder()
+                        .nodeId(nodeId)
+                        .state("OFFLINE")
+                        .virtualId(nodeId)
+                        .build()).bytes(), 0, true);
         Mqtt.setup(this.globals, opts);
         for (int i = 0; i < globals.getMqttMaxRetry(); i++) {
             try {

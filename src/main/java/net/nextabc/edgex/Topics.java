@@ -51,9 +51,14 @@ final public class Topics {
         return prefixValues + exTopic;
     }
 
-    public static String formatState(String exTopic) {
-        checkTopic(exTopic);
-        return prefixStates + exTopic;
+    public static String formatStates(String nodeId) {
+        checkTopic(nodeId);
+        return prefixStates + nodeId;
+    }
+
+    public static String formatProperties(String nodeId) {
+        checkTopic(nodeId);
+        return prefixProperties + nodeId;
     }
 
     public static String formatStatistics(String nodeId) {

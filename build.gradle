@@ -44,6 +44,8 @@ dependencies {
     compile 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.1'
     // Kit
     compile 'net.nextabc:toolkit:1.0.0'
+    // JSON
+    compile 'com.google.code.gson:gson:2.8.5'
     // Lombok, 注意，需要IDE插件支持
     compileOnly 'org.projectlombok:lombok:1.18.8'
     annotationProcessor 'org.projectlombok:lombok:1.18.8'
