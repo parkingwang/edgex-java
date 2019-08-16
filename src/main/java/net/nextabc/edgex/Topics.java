@@ -9,13 +9,14 @@ import lombok.extern.log4j.Log4j;
 @Log4j
 final public class Topics {
 
-    private static final String prefixProperties = "$EdgeX/properties/";
-    private static final String prefixEvents = "$EdgeX/events/";
-    private static final String prefixValues = "$EdgeX/values/";
-    private static final String prefixStatistics = "$EdgeX/statistics/";
-    private static final String prefixStates = "$EdgeX/states/";
-    private static final String prefixRequests = "$EdgeX/requests/";
-    private static final String prefixReplies = "$EdgeX/replies/";
+    private static final String prefixRoot = "$EdgeX/";
+    private static final String prefixProperties = prefixRoot + "properties/";
+    private static final String prefixEvents = prefixRoot + "events/";
+    private static final String prefixValues = prefixRoot + "values/";
+    private static final String prefixStatistics = prefixRoot + "statistics/";
+    private static final String prefixStates = prefixRoot + "states/";
+    private static final String prefixRequests = prefixRoot + "requests/";
+    private static final String prefixReplies = prefixRoot + "replies/";
 
     /**
      * 节点Inspect事件的订阅Topic
@@ -40,6 +41,10 @@ final public class Topics {
     private Topics() {
     }
     ////
+
+    public static String formatEdgeX(String exTopic) {
+        return prefixRoot + exTopic;
+    }
 
     public static String formatEvents(String exTopic) {
         checkTopic(exTopic);

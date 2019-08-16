@@ -15,7 +15,7 @@ repositories {
 Dep:
 
 ```gradle
-compile 'net.nextabc:edgex:1.5.0-a6'
+compile 'net.nextabc:edgex:1.6.0-a4'
 ```
 
 
@@ -28,7 +28,7 @@ EdgeX-Java的设计目标是为硬件设备提供通讯层框架，支持硬件�
 
 1. 提供基于静态配置文件的硬件配置及管理能力；
 2. 提供基于MQTT的事件上行通讯、事件监听下行和事件处理的能力；
-3. 提供基于gRPC的RPC主动指令点对点控制能力；
+3. 提供基于MQTT的AsyncRPC主动指令点对点控制能力；
 4. 提供跨平台编译和运行能力；
 
 ## 主要概念

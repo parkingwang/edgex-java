@@ -25,7 +25,7 @@ repositories {
 
 
 group 'net.nextabc'
-version '1.6.0-a3'
+version '1.6.0-a4'
 description = 'Edge X for java'
 
 
@@ -46,6 +46,7 @@ dependencies {
     compile 'net.nextabc:toolkit:1.0.0'
     // JSON
     compile 'com.google.code.gson:gson:2.8.5'
+
     // Lombok, 注意，需要IDE插件支持
     compileOnly 'org.projectlombok:lombok:1.18.8'
     annotationProcessor 'org.projectlombok:lombok:1.18.8'
