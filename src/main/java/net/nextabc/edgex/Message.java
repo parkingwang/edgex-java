@@ -47,7 +47,7 @@ public interface Message {
      *
      * @return 返回消息Id
      */
-    int sequenceId();
+    long sequenceId();
 
     ////
 
@@ -56,9 +56,9 @@ public interface Message {
         public final byte magic;
         public final byte version;
         public final byte controlVar;
-        public final int sequenceId;
+        public final long sequenceId;
 
-        public Header(byte magic, byte version, byte controlVar, int sequenceId) {
+        public Header(byte magic, byte version, byte controlVar, long sequenceId) {
             this.magic = magic;
             this.version = version;
             this.controlVar = controlVar;
@@ -88,7 +88,7 @@ public interface Message {
                 dos.writeByte(header.magic);
                 dos.writeByte(header.version);
                 dos.writeByte(header.controlVar);
-                dos.writeInt(header.sequenceId);
+                dos.writeLong(header.sequenceId);
                 dos.write(sourceNodeId.getBytes());
                 dos.writeByte(FrameEmpty);
                 dos.write(body);
@@ -115,7 +115,7 @@ public interface Message {
         }
 
         @Override
-        public int sequenceId() {
+        public long sequenceId() {
             return this.header.sequenceId;
         }
 
@@ -135,7 +135,7 @@ public interface Message {
      * @param seqId         流水ID
      * @return Message
      */
-    static Message newMessageById(String virtualNodeId, byte[] body, int seqId) {
+    static Message newMessageById(String virtualNodeId, byte[] body, long seqId) {
         return new message(
                 new Header(FrameMagic, FrameVersion, FrameVarData, seqId),
                 virtualNodeId,
@@ -169,14 +169,15 @@ public interface Message {
     static Message parse(byte[] data) {
         final ByteArrayInputStream bais = new ByteArrayInputStream(data);
         final DataInputStream dis = new DataInputStream(bais);
+        // HeaderSize: (Magic + Ver + Var) + Long(8)
+        final int headerSize = 3 + 8;
         try {
             final byte magic = dis.readByte();
             final byte version = dis.readByte();
             final byte vars = dis.readByte();
-            final int seqId = dis.readInt();
-            // header size: 7
-            final byte[] name = read0(data, 7, FrameEmpty, true);
-            final byte[] body = read0(data, 8 + name.length, FrameEmpty, false);
+            final long seqId = dis.readLong();
+            final byte[] name = read0(data, headerSize, FrameEmpty, true);
+            final byte[] body = read0(data, (headerSize + 1) + name.length, FrameEmpty, false);
             return new message(new Header(
                     magic,
                     version,

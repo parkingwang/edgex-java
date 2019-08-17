@@ -210,7 +210,7 @@ final class DriverImpl implements Driver {
     public CompletableFuture<Message> call(String remoteNodeId, String remoteVirtualNodeId, byte[] body) {
         checkState();
         final Message req = nextMessageOf(remoteVirtualNodeId, body);
-        final int seqId = req.sequenceId();
+        final long seqId = req.sequenceId();
         if (globals.isLogVerbose()) {
             log.debug("MQ_RPC调用，RemoteNodeId: " + remoteNodeId + ", SeqId: " + seqId);
         }
