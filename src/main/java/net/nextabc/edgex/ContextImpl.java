@@ -2,6 +2,7 @@ package net.nextabc.edgex;
 
 import com.moandjiezana.toml.Toml;
 import lombok.extern.log4j.Log4j;
+import net.nextabc.edgex.internal.SnowflakeId;
 import net.nextabc.kit.HashMap;
 import net.nextabc.kit.ImmutableMap;
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -27,10 +28,13 @@ final class ContextImpl implements Context {
     private Globals globals;
     private MqttClient mqttClient;
     private String nodeId;
+    private final SnowflakeId snowflakeId;
+
     private final CountDownLatch shutdown = new CountDownLatch(1);
 
     ContextImpl(Globals globals) {
         this.globals = globals;
+        this.snowflakeId = new SnowflakeId(globals.getNodeWorkerId(), globals.getNodeDataCenterId());
         Runtime.getRuntime().addShutdownHook(new Thread(shutdown::countDown));
     }
 
@@ -164,7 +168,7 @@ final class ContextImpl implements Context {
     @Override
     public Driver newDriver(Driver.Options opts) {
         checkCtx();
-        return new DriverImpl(nodeId, mqttClient, globals, opts);
+        return new DriverImpl(nodeId, mqttClient, snowflakeId, globals, opts);
     }
 
     @Override

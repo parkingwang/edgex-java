@@ -22,7 +22,7 @@ public class MessageTestCase {
         Assert.assertEquals(Message.FrameMagic, msg.header().magic);
         Assert.assertEquals(Message.FrameVersion, msg.header().version);
         Assert.assertEquals(Message.FrameVarData, msg.header().controlVar);
-        Assert.assertEquals(2019, msg.sequenceId());
+        Assert.assertEquals(2019, msg.eventId());
         Assert.assertEquals(Message.makeVirtualNodeId("CHEN", "NODE"), msg.virtualNodeId());
         Assert.assertArrayEquals(body, msg.body());
     }

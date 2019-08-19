@@ -26,14 +26,15 @@ public class TestDriver {
             final ScheduledExecutorService ticker = Executors.newScheduledThreadPool(4);
             ticker.scheduleAtFixedRate(() -> {
                 try {
-                    Message msg = driver.executeNextId(
+                    Message msg = driver.execute(
                             "DEV-ENDPOINT",
                             "TEST-VNID",
                             "Hello".getBytes(),
+                            driver.generateEventId(),
                             5);
                     System.out.println("########## Exec响应：" + new String(msg.body()));
                 } catch (Exception e) {
-                    log.error("Exec调用出错: "+ e);
+                    log.error("Exec调用出错: " + e);
                 }
                 System.out.println("\n\n");
             }, 1, 1, TimeUnit.SECONDS);

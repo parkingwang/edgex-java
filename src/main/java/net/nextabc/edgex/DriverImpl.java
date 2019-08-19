@@ -1,6 +1,7 @@
 package net.nextabc.edgex;
 
 import net.nextabc.edgex.internal.MessageRouter;
+import net.nextabc.edgex.internal.SnowflakeId;
 import org.apache.log4j.Logger;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -9,7 +10,6 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author 陈永佳 (yoojiachen@gmail.com)
@@ -21,16 +21,16 @@ final class DriverImpl implements Driver {
 
     private final Globals globals;
 
-    private final String[] mqttTopics;
+    private final Options options;
+    private final Set<String> subscribedTopics = new HashSet<>();
 
-
-    private final AtomicInteger sequenceId = new AtomicInteger(0);
     private final List<OnStartupListener<Driver>> startupListeners = new ArrayList<>(0);
     private final List<OnShutdownListener<Driver>> shutdownListeners = new ArrayList<>(0);
     private final MessageRouter router = new MessageRouter();
 
     private final MqttClient mqttClientRef;
     private final String nodeId;
+    private final SnowflakeId eventIdRef;
 
     private final Statistics statistics = new Statistics();
     private final String statisticsMqttTopic;
@@ -39,28 +39,15 @@ final class DriverImpl implements Driver {
     private boolean stateStarted = false;
     private DriverHandler handler;
 
-    DriverImpl(String nodeId, MqttClient mqttClient, Globals globals, Options options) {
+    DriverImpl(String nodeId, MqttClient mqttClient, SnowflakeId snowflakeId, Globals globals, Options options) {
         this.nodeId = nodeId;
         this.mqttClientRef = mqttClient;
         this.globals = Objects.requireNonNull(globals);
+        this.eventIdRef = snowflakeId;
 
         this.statisticsTimer = new Timer("DriverStatisticsTimer");
         this.statisticsMqttTopic = Topics.formatStatistics(nodeId);
-
-        // topics
-        final List<String> topics = new ArrayList<>();
-        for (String topic : options.eventTopics) {
-            topics.add(Topics.formatEvents(topic));
-        }
-        for (String topic : options.valueTopics) {
-            topics.add(Topics.formatValues(topic));
-        }
-        topics.addAll(options.customTopics);
-        this.mqttTopics = topics.toArray(new String[0]);
-        // 一些场景中，Driver只用作驱动，不监听任何事件
-        if (this.mqttTopics.length == 0) {
-            log.warn("Driver未监听任何事件：" + nodeId);
-        }
+        this.options = options;
     }
 
     @Override
@@ -98,24 +85,19 @@ final class DriverImpl implements Driver {
     public void publishStatistics(byte[] data) throws MqttException {
         mqttPublishMessage(
                 statisticsMqttTopic,
-                nextMessageBy(this.nodeId, data),
+                Message.newMessageById(this.nodeId, data, generateEventId()),
                 0,
                 false);
     }
 
     @Override
-    public int nextMessageSequenceId() {
-        return sequenceId.getAndSet((sequenceId.get() + 1) % Integer.MAX_VALUE);
+    public long generateEventId() {
+        return eventIdRef.nextId();
     }
 
     @Override
-    public Message nextMessageBy(String virtualId, byte[] body) {
-        return Message.newMessageWith(this.nodeId, virtualId, body, this.nextMessageSequenceId());
-    }
-
-    @Override
-    public Message nextMessageOf(String virtualNodeId, byte[] body) {
-        return Message.newMessageById(virtualNodeId, body, this.nextMessageSequenceId());
+    public Message newMessage(String virtualId, byte[] body, long eventId) {
+        return Message.newMessageWith(this.nodeId, virtualId, body, eventId);
     }
 
     @Override
@@ -134,26 +116,49 @@ final class DriverImpl implements Driver {
         this.startupListeners.forEach(l -> l.onBefore(this));
         this.statistics.up();
 
-        if (this.mqttTopics.length > 0) {
-            // 监听所有Trigger的UserTopic
+        final int qos = this.globals.getMqttQoS();
+        for (Map.Entry<TopicType, Set<String>> item : this.options.topicMapping.entrySet()) {
+            final TopicType type = item.getKey();
             final IMqttMessageListener listener = (rawMqttTopic, message) -> {
                 final byte[] bytes = message.getPayload();
                 this.statistics.updateRecv(bytes.length);
-                final String topic = Topics.unwrapEdgeXTopic(rawMqttTopic);
+                final String exTopic = Topics.unwrapEdgeXTopic(rawMqttTopic);
                 try {
-                    handler.handle(topic, Message.parse(bytes));
+                    handler.handle(type, exTopic, Message.parse(bytes));
                 } catch (Exception e) {
                     log.error("消息处理出错", e);
                 }
             };
-            final int qos = this.globals.getMqttQoS();
-            try {
-                for (String topic : this.mqttTopics) {
-                    log.debug("开启监听事件: QOS= " + qos + ", Topic= " + topic);
-                    this.mqttClientRef.subscribe(topic, qos, listener);
+            for (String topic : item.getValue()) {
+                final String mqttTopic;
+                switch (type) {
+                    default:
+                    case Custom:
+                        mqttTopic = topic;
+                        break;
+                    case Events:
+                        mqttTopic = Topics.formatEvents(topic);
+                        break;
+                    case Values:
+                        mqttTopic = Topics.formatValues(topic);
+                        break;
+                    case Actions:
+                        mqttTopic = Topics.formatActions(topic);
+                        break;
+                    case Properties:
+                        mqttTopic = Topics.formatProperties(topic);
+                        break;
+                    case Statistics:
+                        mqttTopic = Topics.formatStatistics(topic);
+                        break;
                 }
-            } catch (MqttException e) {
-                log.fatal("监听TRIGGER事件出错：", e);
+                log.debug("开启订阅事件: QOS= " + qos + ", Topic= " + mqttTopic);
+                this.subscribedTopics.add(mqttTopic);
+                try {
+                    this.mqttClientRef.subscribe(mqttTopic, qos, listener);
+                } catch (MqttException e) {
+                    log.error("订阅事件出错", e);
+                }
             }
         }
 
@@ -185,16 +190,14 @@ final class DriverImpl implements Driver {
     @Override
     public void shutdown() {
         this.shutdownListeners.forEach(l -> l.onBefore(this));
-        for (String t : this.mqttTopics) {
+        for (String t : this.subscribedTopics) {
             log.debug("取消监听事件: " + t);
         }
-
         try {
-            this.mqttClientRef.unsubscribe(this.mqttTopics);
+            this.mqttClientRef.unsubscribe(this.subscribedTopics.toArray(new String[0]));
         } catch (MqttException e) {
             log.fatal("取消监听出错：", e);
         }
-
         this.statisticsTimer.cancel();
         this.statisticsTimer.purge();
         this.shutdownListeners.forEach(l -> l.onAfter(this));
@@ -202,21 +205,16 @@ final class DriverImpl implements Driver {
     }
 
     @Override
-    public Message executeById(String remoteNodeId, String remoteVirtualNodeId, byte[] body, long seqId, int timeoutSec) throws Exception {
-        return call(remoteNodeId, remoteVirtualNodeId, body, seqId).get(timeoutSec, TimeUnit.SECONDS);
+    public Message execute(String remoteNodeId, String remoteVirtualNodeId, byte[] body, long eventId, int timeoutSec) throws Exception {
+        return call(remoteNodeId, remoteVirtualNodeId, body, eventId).get(timeoutSec, TimeUnit.SECONDS);
     }
 
     @Override
-    public Message executeNextId(String remoteNodeId, String remoteVirtualNodeId, byte[] body, int timeoutSec) throws Exception {
-        return call(remoteNodeId, remoteVirtualNodeId, body, nextMessageSequenceId()).get(timeoutSec, TimeUnit.SECONDS);
-    }
-
-    @Override
-    public CompletableFuture<Message> call(String remoteNodeId, String remoteVirtualNodeId, byte[] body, long seqId) {
+    public CompletableFuture<Message> call(String remoteNodeId, String remoteVirtualNodeId, byte[] body, long eventId) {
         checkState();
-        final Message req = Message.newMessageById(remoteVirtualNodeId, body, seqId);
+        final Message req = Message.newMessageById(remoteVirtualNodeId, body, eventId);
         if (globals.isLogVerbose()) {
-            log.debug("MQ_RPC调用，RemoteNodeId: " + remoteNodeId + ", SeqId: " + seqId);
+            log.debug("MQ_RPC调用，RemoteNodeId: " + remoteNodeId + ", SeqId: " + eventId);
         }
         try {
             mqttPublishMessage(
@@ -228,10 +226,13 @@ final class DriverImpl implements Driver {
         } catch (MqttException e) {
             log.error("MQ_RPC调用，发送MQTT消息出错", e);
             return CompletableFuture.completedFuture(
-                    nextMessageOf(remoteVirtualNodeId, ("MQ_RPC_MQTT_ERR:" + e.getMessage()).getBytes()));
+                    Message.newMessageById(remoteVirtualNodeId,
+                            ("MQ_RPC_MQTT_ERR:" + e.getMessage()).getBytes(),
+                            eventId
+                    ));
         }
         final String topic = Topics.formatRepliesFilter(remoteNodeId, this.nodeId);
-        return this.router.register(topic, msg -> seqId == msg.sequenceId());
+        return this.router.register(topic, msg -> eventId == msg.eventId());
     }
 
     private void mqttPublishMessage(String mqttTopic, Message msg, int qos, boolean retained) throws MqttException {

@@ -2,16 +2,13 @@ package net.nextabc.edgex;
 
 import org.eclipse.paho.client.mqttv3.MqttException;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 /**
  * @author 陈哈哈 (yoojiachen@gmail.com)
  */
-public interface Driver extends LifeCycle, NodeId, Messaging {
+public interface Driver extends LifeCycle, NodeId {
 
     /**
      * 处理消息
@@ -19,6 +16,23 @@ public interface Driver extends LifeCycle, NodeId, Messaging {
      * @param handler 处理函数
      */
     void process(DriverHandler handler);
+
+    /**
+     * 返回内部消息流水号
+     *
+     * @return 消息流水号
+     */
+    long generateEventId();
+
+    /**
+     * 创建本节点消息对象
+     *
+     * @param virtualId 虚拟ID
+     * @param body      Body
+     * @param eventId   事件ID
+     * @return 消息对象
+     */
+    Message newMessage(String virtualId, byte[] body, long eventId);
 
     /**
      * 发送MQTT消息
@@ -63,24 +77,12 @@ public interface Driver extends LifeCycle, NodeId, Messaging {
      * @param remoteNodeId        　目标Endpoint的地址
      * @param remoteVirtualNodeId 　目标Virtual Node id
      * @param body                　Body
-     * @param seqId               指定流水ID
+     * @param eventId             指定EventID
      * @param timeoutSec          　请求超时时间
      * @return 响应消息
      * @throws Exception 如果过程中发生错误，返回错误消息
      */
-    Message executeById(String remoteNodeId, String remoteVirtualNodeId, byte[] body, long seqId, int timeoutSec) throws Exception;
-
-    /**
-     * 发起一个同步调用消息请求，并获取响应消息。使用内部流水ID。
-     *
-     * @param remoteNodeId        　目标Endpoint的地址
-     * @param remoteVirtualNodeId 　目标Virtual Node id
-     * @param body                　Body
-     * @param timeoutSec          　请求超时时间
-     * @return 响应消息
-     * @throws Exception 如果过程中发生错误，返回错误消息
-     */
-    Message executeNextId(String remoteNodeId, String remoteVirtualNodeId, byte[] body, int timeoutSec) throws Exception;
+    Message execute(String remoteNodeId, String remoteVirtualNodeId, byte[] body, long eventId, int timeoutSec) throws Exception;
 
     /**
      * 发起一个异步请求，返回CompletableFuture对象
@@ -90,7 +92,7 @@ public interface Driver extends LifeCycle, NodeId, Messaging {
      * @param body                　Body
      * @return CompletableFuture
      */
-    CompletableFuture<Message> call(String remoteNodeId, String remoteVirtualNodeId, byte[] body, long seqId);
+    CompletableFuture<Message> call(String remoteNodeId, String remoteVirtualNodeId, byte[] body, long eventId);
 
     /**
      * 添加Startup监听接口
@@ -110,32 +112,42 @@ public interface Driver extends LifeCycle, NodeId, Messaging {
 
     final class Options {
 
-        final List<String> eventTopics;
-        final List<String> valueTopics;
-        final List<String> customTopics;
+        final Map<TopicType, Set<String>> topicMapping;
 
         public Options() {
-            this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+            topicMapping = new HashMap<>(TopicType.values().length);
+            for (TopicType t : TopicType.values()) {
+                topicMapping.put(t, new HashSet<>());
+            }
         }
 
-        public Options(List<String> eventTopics, List<String> valueTopics, List<String> customTopics) {
-            this.eventTopics = eventTopics == null ? Collections.emptyList() : eventTopics;
-            this.valueTopics = valueTopics == null ? Collections.emptyList() : valueTopics;
-            this.customTopics = customTopics == null ? Collections.emptyList() : customTopics;
+        public Options addEventsTopic(String... topics) {
+            return addTopic(TopicType.Events, topics);
         }
 
-        public Options addEventTopic(String... topics) {
-            eventTopics.addAll(Arrays.asList(topics));
-            return this;
+        public Options addValuesTopic(String... topics) {
+            return addTopic(TopicType.Values, topics);
         }
 
-        public Options addValueTopic(String... topics) {
-            valueTopics.addAll(Arrays.asList(topics));
-            return this;
+        public Options addActionTopic(String... topics) {
+            return addTopic(TopicType.Actions, topics);
+        }
+
+        public Options addStatisticsTopic(String... topics) {
+            return addTopic(TopicType.Statistics, topics);
+        }
+
+        public Options addPropertiesTopic(String... topics) {
+            return addTopic(TopicType.Properties, topics);
         }
 
         public Options addCustomTopic(String... topics) {
-            customTopics.addAll(Arrays.asList(topics));
+            return addTopic(TopicType.Custom, topics);
+        }
+
+        public Options addTopic(TopicType type, String... topics) {
+            final Set<String> t = topicMapping.get(type);
+            t.addAll(Arrays.asList(topics));
             return this;
         }
     }

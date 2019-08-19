@@ -47,7 +47,7 @@ public interface Message {
      *
      * @return 返回消息Id
      */
-    long sequenceId();
+    long eventId();
 
     ////
 
@@ -56,13 +56,13 @@ public interface Message {
         public final byte magic;
         public final byte version;
         public final byte controlVar;
-        public final long sequenceId;
+        public final long eventId;
 
-        public Header(byte magic, byte version, byte controlVar, long sequenceId) {
+        public Header(byte magic, byte version, byte controlVar, long eventId) {
             this.magic = magic;
             this.version = version;
             this.controlVar = controlVar;
-            this.sequenceId = sequenceId;
+            this.eventId = eventId;
         }
     }
 
@@ -88,7 +88,7 @@ public interface Message {
                 dos.writeByte(header.magic);
                 dos.writeByte(header.version);
                 dos.writeByte(header.controlVar);
-                dos.writeLong(header.sequenceId);
+                dos.writeLong(header.eventId);
                 dos.write(sourceNodeId.getBytes());
                 dos.writeByte(FrameEmpty);
                 dos.write(body);
@@ -115,8 +115,8 @@ public interface Message {
         }
 
         @Override
-        public long sequenceId() {
-            return this.header.sequenceId;
+        public long eventId() {
+            return this.header.eventId;
         }
 
     }
@@ -132,15 +132,14 @@ public interface Message {
      *
      * @param virtualNodeId Virtual Node Id
      * @param body          body
-     * @param seqId         流水ID
+     * @param eventId         EventID
      * @return Message
      */
-    static Message newMessageById(String virtualNodeId, byte[] body, long seqId) {
+    static Message newMessageById(String virtualNodeId, byte[] body, long eventId) {
         return new message(
-                new Header(FrameMagic, FrameVersion, FrameVarData, seqId),
+                new Header(FrameMagic, FrameVersion, FrameVarData, eventId),
                 virtualNodeId,
                 body);
-
     }
 
     /**
@@ -149,14 +148,14 @@ public interface Message {
      * @param nodeId    Node Id
      * @param virtualId Virtual Id
      * @param body      body
-     * @param seqId     流水ID
+     * @param eventId     EventID
      * @return Message
      */
-    static Message newMessageWith(String nodeId, String virtualId, byte[] body, int seqId) {
+    static Message newMessageWith(String nodeId, String virtualId, byte[] body, long eventId) {
         return newMessageById(
                 makeVirtualNodeId(nodeId, virtualId),
                 body,
-                seqId
+                eventId
         );
     }
 
@@ -175,14 +174,14 @@ public interface Message {
             final byte magic = dis.readByte();
             final byte version = dis.readByte();
             final byte vars = dis.readByte();
-            final long seqId = dis.readLong();
+            final long eventId = dis.readLong();
             final byte[] name = read0(data, headerSize, FrameEmpty, true);
             final byte[] body = read0(data, (headerSize + 1) + name.length, FrameEmpty, false);
             return new message(new Header(
                     magic,
                     version,
                     vars,
-                    seqId
+                    eventId
             ), new String(name), body);
         } catch (Exception e) {
             throw new RuntimeException(e);

@@ -28,4 +28,7 @@ public class Globals {
 
     private boolean logVerbose;
 
+    private long nodeDataCenterId;
+    private long nodeWorkerId;
+
 }

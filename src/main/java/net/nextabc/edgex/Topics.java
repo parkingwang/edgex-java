@@ -14,6 +14,7 @@ final public class Topics {
     private static final String prefixEvents = prefixRoot + "events/";
     private static final String prefixValues = prefixRoot + "values/";
     private static final String prefixStatistics = prefixRoot + "statistics/";
+    private static final String prefixAction = prefixRoot + "actions/";
     private static final String prefixStates = prefixRoot + "states/";
     private static final String prefixRequests = prefixRoot + "requests/";
     private static final String prefixReplies = prefixRoot + "replies/";
@@ -69,6 +70,11 @@ final public class Topics {
     public static String formatStatistics(String nodeId) {
         checkTopic(nodeId);
         return prefixStatistics + nodeId;
+    }
+
+    public static String formatActions(String nodeId) {
+        checkTopic(nodeId);
+        return prefixAction + nodeId;
     }
 
     static String unwrapEdgeXTopic(String mqttRawTopic) {
