@@ -103,8 +103,9 @@ final class ContextImpl implements Context {
         opts.setWill(Topics.formatStates(nodeId),
                 Mqtt.createStateMessage(VirtualNodeState.builder()
                         .nodeId(nodeId)
+                        .groupId(nodeId)
+                        .majorId(nodeId)
                         .state("OFFLINE")
-                        .virtualId(nodeId)
                         .build()).bytes(), 0, true);
         Mqtt.setup(this.globals, opts);
         for (int i = 0; i < globals.getMqttMaxRetry(); i++) {

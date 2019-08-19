@@ -27,12 +27,12 @@ public interface Driver extends LifeCycle, NodeId {
     /**
      * 创建本节点消息对象
      *
-     * @param virtualId 虚拟ID
-     * @param body      Body
-     * @param eventId   事件ID
+     * @param groupId 虚拟ID
+     * @param body    Body
+     * @param eventId 事件ID
      * @return 消息对象
      */
-    Message newMessage(String virtualId, byte[] body, long eventId);
+    Message newMessage(String groupId, String majorId, String minorId, byte[] body, long eventId);
 
     /**
      * 发送MQTT消息
@@ -73,26 +73,24 @@ public interface Driver extends LifeCycle, NodeId {
 
     /**
      * 发起一个同步调用消息请求，并获取响应消息。
-     *
-     * @param remoteNodeId        　目标Endpoint的地址
-     * @param remoteVirtualNodeId 　目标Virtual Node id
-     * @param body                　Body
-     * @param eventId             指定EventID
-     * @param timeoutSec          　请求超时时间
-     * @return 响应消息
-     * @throws Exception 如果过程中发生错误，返回错误消息
      */
-    Message execute(String remoteNodeId, String remoteVirtualNodeId, byte[] body, long eventId, int timeoutSec) throws Exception;
+    Message execute(String nodeId, String groupId, String majorId, String minorId, byte[] body,
+                    long eventId, int timeoutSec) throws Exception;
+
+    /**
+     * 发起一个同步调用消息请求，并获取响应消息。
+     */
+    Message execute(Message message, int timeoutSec) throws Exception;
 
     /**
      * 发起一个异步请求，返回CompletableFuture对象
-     *
-     * @param remoteNodeId        　目标Endpoint的地址
-     * @param remoteVirtualNodeId 　目标Virtual Node id
-     * @param body                　Body
-     * @return CompletableFuture
      */
-    CompletableFuture<Message> call(String remoteNodeId, String remoteVirtualNodeId, byte[] body, long eventId);
+    CompletableFuture<Message> call(String nodeId, String groupId, String majorId, String minorId, byte[] body, long eventId);
+
+    /**
+     * 发起一个异步请求，返回CompletableFuture对象
+     */
+    CompletableFuture<Message> call(Message message);
 
     /**
      * 添加Startup监听接口

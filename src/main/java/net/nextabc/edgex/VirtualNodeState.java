@@ -12,19 +12,19 @@ import java.util.Map;
 @Builder
 public class VirtualNodeState {
 
+    private final String unionId;
     private final String nodeId;
-    private final String uuid;
-    private final String virtualId;
+    private final String groupId;
     private final String majorId;
     private final String minorId;
     private final String state;
     private final Map<String, Object> values;
 
-    public VirtualNodeState(String nodeId, String uuid, String virtualId, String majorId, String minorId,
+    public VirtualNodeState(String unionId, String nodeId, String groupId, String majorId, String minorId,
                             String state, Map<String, Object> values) {
+        this.unionId = unionId;
         this.nodeId = nodeId;
-        this.uuid = uuid;
-        this.virtualId = virtualId;
+        this.groupId = groupId;
         this.majorId = majorId;
         this.minorId = minorId;
         this.state = state;

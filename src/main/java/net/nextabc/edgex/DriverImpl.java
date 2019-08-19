@@ -85,7 +85,9 @@ final class DriverImpl implements Driver {
     public void publishStatistics(byte[] data) throws MqttException {
         mqttPublishMessage(
                 statisticsMqttTopic,
-                Message.newMessageById(this.nodeId, data, generateEventId()),
+                Message.newMessage(
+                        this.nodeId, this.nodeId, this.nodeId, null,
+                        data, generateEventId()),
                 0,
                 false);
     }
@@ -96,8 +98,8 @@ final class DriverImpl implements Driver {
     }
 
     @Override
-    public Message newMessage(String virtualId, byte[] body, long eventId) {
-        return Message.newMessageWith(this.nodeId, virtualId, body, eventId);
+    public Message newMessage(String groupId, String majorId, String minorId, byte[] body, long eventId) {
+        return Message.newMessage(this.nodeId, groupId, majorId, minorId, body, eventId);
     }
 
     @Override
@@ -205,34 +207,46 @@ final class DriverImpl implements Driver {
     }
 
     @Override
-    public Message execute(String remoteNodeId, String remoteVirtualNodeId, byte[] body, long eventId, int timeoutSec) throws Exception {
-        return call(remoteNodeId, remoteVirtualNodeId, body, eventId).get(timeoutSec, TimeUnit.SECONDS);
+    public Message execute(String nodeId, String groupId, String majorId, String minorId,
+                           byte[] body, long eventId, int timeoutSec) throws Exception {
+        return call(nodeId, groupId, majorId, minorId, body, eventId).get(timeoutSec, TimeUnit.SECONDS);
     }
 
     @Override
-    public CompletableFuture<Message> call(String remoteNodeId, String remoteVirtualNodeId, byte[] body, long eventId) {
+    public Message execute(Message message, int timeoutSec) throws Exception {
+        return call(message).get(timeoutSec, TimeUnit.SECONDS);
+    }
+
+    @Override
+    public CompletableFuture<Message> call(Message message) {
         checkState();
-        final Message req = Message.newMessageById(remoteVirtualNodeId, body, eventId);
+        final long eventId = message.eventId();
         if (globals.isLogVerbose()) {
-            log.debug("MQ_RPC调用，RemoteNodeId: " + remoteNodeId + ", SeqId: " + eventId);
+            log.debug("MQ_RPC调用，RemoteNode: " + nodeId + ", SeqId: " + eventId);
         }
         try {
             mqttPublishMessage(
-                    Topics.formatRequestSend(remoteNodeId, this.nodeId),
-                    req,
+                    Topics.formatRequestSend(nodeId, this.nodeId),
+                    message,
                     this.globals.getMqttQoS(),
                     false
             );
         } catch (MqttException e) {
             log.error("MQ_RPC调用，发送MQTT消息出错", e);
             return CompletableFuture.completedFuture(
-                    Message.newMessageById(remoteVirtualNodeId,
+                    Message.newMessageByUnionId(
+                            message.unionId(),
                             ("MQ_RPC_MQTT_ERR:" + e.getMessage()).getBytes(),
                             eventId
                     ));
         }
-        final String topic = Topics.formatRepliesFilter(remoteNodeId, this.nodeId);
+        final String topic = Topics.formatRepliesFilter(nodeId, this.nodeId);
         return this.router.register(topic, msg -> eventId == msg.eventId());
+    }
+
+    @Override
+    public CompletableFuture<Message> call(String nodeId, String groupId, String majorId, String minorId, byte[] body, long eventId) {
+        return call(Message.newMessage(nodeId, groupId, majorId, minorId, body, eventId));
     }
 
     private void mqttPublishMessage(String mqttTopic, Message msg, int qos, boolean retained) throws MqttException {

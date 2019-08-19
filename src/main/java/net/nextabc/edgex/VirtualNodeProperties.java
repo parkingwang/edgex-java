@@ -14,7 +14,7 @@ import java.util.Map;
 public class VirtualNodeProperties {
 
     private final String uuid;
-    private final String virtualId;
+    private final String groupId;
     private final String majorId;
     private final String minorId;
     private final String description;
@@ -22,11 +22,11 @@ public class VirtualNodeProperties {
     private final Map<String, String> stateCommands;
     private final Map<String, String> attrs;
 
-    VirtualNodeProperties(String uuid, String virtualId, String majorId, String minorId,
+    VirtualNodeProperties(String uuid, String groupId, String majorId, String minorId,
                           String description, boolean virtual,
                           Map<String, String> stateCommands, Map<String, String> attrs) {
         this.uuid = uuid;
-        this.virtualId = virtualId;
+        this.groupId = groupId;
         this.majorId = majorId;
         this.minorId = minorId;
         this.description = description;

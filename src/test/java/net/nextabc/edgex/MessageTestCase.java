@@ -12,7 +12,7 @@ public class MessageTestCase {
 
     @Test
     public void test() {
-        Message msg = Message.newMessageWith("CHEN", "NODE", body, 2019);
+        Message msg = Message.newMessage("CHEN", "NODE", body, 2019);
         check(msg);
         Message passed = Message.parse(msg.bytes());
         check(passed);
@@ -23,7 +23,7 @@ public class MessageTestCase {
         Assert.assertEquals(Message.FrameVersion, msg.header().version);
         Assert.assertEquals(Message.FrameVarData, msg.header().controlVar);
         Assert.assertEquals(2019, msg.eventId());
-        Assert.assertEquals(Message.makeVirtualNodeId("CHEN", "NODE"), msg.virtualNodeId());
+        Assert.assertEquals(Message.makeUnionId("CHEN", "NODE"), msg.unionId());
         Assert.assertArrayEquals(body, msg.body());
     }
 }

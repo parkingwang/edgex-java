@@ -29,6 +29,8 @@ public class TestDriver {
                     Message msg = driver.execute(
                             "DEV-ENDPOINT",
                             "TEST-VNID",
+                            "Test",
+                            "",
                             "Hello".getBytes(),
                             driver.generateEventId(),
                             5);

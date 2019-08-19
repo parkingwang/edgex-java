@@ -35,12 +35,31 @@ public interface Message {
     byte[] body();
 
     /**
-     * 返回虚拟节点ID
-     * 它由两部分组成：NodeId + VirtualId。在可以唯一标识一个虚拟设备。
-     *
-     * @return 虚拟节点ID
+     * @return 返回NodeId
      */
-    String virtualNodeId();
+    String nodeId();
+
+    /**
+     * @return 返回GroupId
+     */
+    String groupId();
+
+    /**
+     * @return 返回MajorId
+     */
+    String majorId();
+
+    /**
+     * @return 返回MinorId
+     */
+    String minorId();
+
+    /**
+     * 返回联合ID
+     *
+     * @return UnionId
+     */
+    String unionId();
 
     /**
      * 返回返回消息Id
@@ -71,13 +90,19 @@ public interface Message {
     final class message implements Message {
 
         private final Header header;
-        private final String sourceNodeId;
+        private final String unionId;
+        private final String[] _unionId;
         private final byte[] body;
 
-        private message(Header header, String sourceNodeId, byte[] body) {
+        private message(Header header, String unionId, String[] _unionId, byte[] body) {
             this.header = header;
-            this.sourceNodeId = sourceNodeId;
+            this.unionId = unionId;
+            this._unionId = _unionId;
             this.body = body;
+        }
+
+        private message(Header header, String unionId, byte[] body) {
+            this(header, unionId, splitUnionId(unionId), body);
         }
 
         @Override
@@ -89,7 +114,7 @@ public interface Message {
                 dos.writeByte(header.version);
                 dos.writeByte(header.controlVar);
                 dos.writeLong(header.eventId);
-                dos.write(sourceNodeId.getBytes());
+                dos.writeBytes(unionId);
                 dos.writeByte(FrameEmpty);
                 dos.write(body);
                 dos.flush();
@@ -110,8 +135,28 @@ public interface Message {
         }
 
         @Override
-        public String virtualNodeId() {
-            return this.sourceNodeId;
+        public String unionId() {
+            return this.unionId;
+        }
+
+        @Override
+        public String nodeId() {
+            return _unionId[0];
+        }
+
+        @Override
+        public String groupId() {
+            return _unionId[1];
+        }
+
+        @Override
+        public String majorId() {
+            return _unionId[2];
+        }
+
+        @Override
+        public String minorId() {
+            return _unionId[3];
         }
 
         @Override
@@ -123,40 +168,55 @@ public interface Message {
 
     ////
 
-    static String makeVirtualNodeId(String nodeId, String virtualId) {
-        return nodeId + ":" + virtualId;
+    static String[] splitUnionId(String unionId) {
+        // TODO Test me
+        final String[] _unionId = new String[4];
+        final String[] uid = unionId.split(":");
+        for (int i = 0; i < 4; i++) {
+            if (i < uid.length) {
+                _unionId[i] = uid[i];
+            }
+        }
+        return _unionId;
+    }
+
+    static String makeUnionId(String nodeId, String groupId, String majorId, String minorId) {
+        Texts.required(nodeId, "NodeId是必须的参数");
+        Texts.required(groupId, "GroupId是必须的参数");
+        Texts.required(majorId, "MajorId是必须的参数");
+        return nodeId + ":" + groupId + ":" + majorId + ":" + (minorId == null ? "" : minorId);
     }
 
     /**
      * 根据字节数据，创建Message对象
      *
-     * @param virtualNodeId Virtual Node Id
-     * @param body          body
-     * @param eventId         EventID
+     * @param unionId UnionId
+     * @param body    body
+     * @param eventId EventID
      * @return Message
      */
-    static Message newMessageById(String virtualNodeId, byte[] body, long eventId) {
+    static Message newMessageByUnionId(String unionId, byte[] body, long eventId) {
         return new message(
                 new Header(FrameMagic, FrameVersion, FrameVarData, eventId),
-                virtualNodeId,
+                unionId,
                 body);
     }
 
     /**
      * 根据字节数据，创建Message对象
      *
-     * @param nodeId    Node Id
-     * @param virtualId Virtual Id
-     * @param body      body
-     * @param eventId     EventID
+     * @param nodeId  Node Id
+     * @param groupId Virtual Id
+     * @param body    body
+     * @param eventId EventID
      * @return Message
      */
-    static Message newMessageWith(String nodeId, String virtualId, byte[] body, long eventId) {
-        return newMessageById(
-                makeVirtualNodeId(nodeId, virtualId),
-                body,
-                eventId
-        );
+    static Message newMessage(String nodeId, String groupId, String majorId, String minorId, byte[] body, long eventId) {
+        return new message(
+                new Header(FrameMagic, FrameVersion, FrameVarData, eventId),
+                makeUnionId(nodeId, groupId, majorId, minorId),
+                new String[]{nodeId, groupId, majorId, minorId},
+                body);
     }
 
     /**

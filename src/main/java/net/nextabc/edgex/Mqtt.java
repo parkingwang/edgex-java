@@ -26,21 +26,21 @@ class Mqtt {
 
     static Message createStateMessage(VirtualNodeState state) {
         final String nodeId = state.getNodeId();
-        if (null != state.getUuid()) {
-            log.debug("使用虚拟使用自定义Uuid：" + state.getUuid());
+        if (null != state.getUnionId()) {
+            log.debug("使用虚拟使用自定义Uuid：" + state.getUnionId());
         } else {
             state = VirtualNodeState.builder()
-                    .virtualId(state.getVirtualId())
+                    .groupId(state.getGroupId())
                     .state(state.getState())
                     .nodeId(state.getNodeId())
                     .majorId(state.getMajorId())
                     .minorId(state.getMinorId())
-                    .uuid(Message.makeVirtualNodeId(nodeId, state.getVirtualId()))
+                    .unionId(Message.makeUnionId(nodeId, state.getGroupId(), state.getMajorId(), state.getMinorId()))
                     .values(state.getValues())
                     .build();
         }
-        return Message.newMessageById(
-                state.getUuid(),
+        return Message.newMessageByUnionId(
+                state.getUnionId(),
                 Codec.toJSON(state).getBytes(),
                 0
         );
