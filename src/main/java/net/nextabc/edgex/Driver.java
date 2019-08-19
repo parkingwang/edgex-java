@@ -63,11 +63,24 @@ public interface Driver extends LifeCycle, NodeId, Messaging {
      * @param remoteNodeId        　目标Endpoint的地址
      * @param remoteVirtualNodeId 　目标Virtual Node id
      * @param body                　Body
+     * @param seqId               指定流水ID
      * @param timeoutSec          　请求超时时间
      * @return 响应消息
      * @throws Exception 如果过程中发生错误，返回错误消息
      */
-    Message execute(String remoteNodeId, String remoteVirtualNodeId, byte[] body, int timeoutSec) throws Exception;
+    Message executeById(String remoteNodeId, String remoteVirtualNodeId, byte[] body, long seqId, int timeoutSec) throws Exception;
+
+    /**
+     * 发起一个同步调用消息请求，并获取响应消息。使用内部流水ID。
+     *
+     * @param remoteNodeId        　目标Endpoint的地址
+     * @param remoteVirtualNodeId 　目标Virtual Node id
+     * @param body                　Body
+     * @param timeoutSec          　请求超时时间
+     * @return 响应消息
+     * @throws Exception 如果过程中发生错误，返回错误消息
+     */
+    Message executeNextId(String remoteNodeId, String remoteVirtualNodeId, byte[] body, int timeoutSec) throws Exception;
 
     /**
      * 发起一个异步请求，返回CompletableFuture对象
@@ -77,7 +90,7 @@ public interface Driver extends LifeCycle, NodeId, Messaging {
      * @param body                　Body
      * @return CompletableFuture
      */
-    CompletableFuture<Message> call(String remoteNodeId, String remoteVirtualNodeId, byte[] body);
+    CompletableFuture<Message> call(String remoteNodeId, String remoteVirtualNodeId, byte[] body, long seqId);
 
     /**
      * 添加Startup监听接口

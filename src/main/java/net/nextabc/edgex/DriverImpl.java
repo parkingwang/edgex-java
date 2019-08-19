@@ -202,15 +202,19 @@ final class DriverImpl implements Driver {
     }
 
     @Override
-    public Message execute(String remoteNodeId, String remoteVirtualNodeId, byte[] body, int timeoutSec) throws Exception {
-        return call(remoteNodeId, remoteVirtualNodeId, body).get(timeoutSec, TimeUnit.SECONDS);
+    public Message executeById(String remoteNodeId, String remoteVirtualNodeId, byte[] body, long seqId, int timeoutSec) throws Exception {
+        return call(remoteNodeId, remoteVirtualNodeId, body, seqId).get(timeoutSec, TimeUnit.SECONDS);
     }
 
     @Override
-    public CompletableFuture<Message> call(String remoteNodeId, String remoteVirtualNodeId, byte[] body) {
+    public Message executeNextId(String remoteNodeId, String remoteVirtualNodeId, byte[] body, int timeoutSec) throws Exception {
+        return call(remoteNodeId, remoteVirtualNodeId, body, nextMessageSequenceId()).get(timeoutSec, TimeUnit.SECONDS);
+    }
+
+    @Override
+    public CompletableFuture<Message> call(String remoteNodeId, String remoteVirtualNodeId, byte[] body, long seqId) {
         checkState();
-        final Message req = nextMessageOf(remoteVirtualNodeId, body);
-        final long seqId = req.sequenceId();
+        final Message req = Message.newMessageById(remoteVirtualNodeId, body, seqId);
         if (globals.isLogVerbose()) {
             log.debug("MQ_RPC调用，RemoteNodeId: " + remoteNodeId + ", SeqId: " + seqId);
         }

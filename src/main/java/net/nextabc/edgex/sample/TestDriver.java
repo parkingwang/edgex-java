@@ -26,7 +26,7 @@ public class TestDriver {
             final ScheduledExecutorService ticker = Executors.newScheduledThreadPool(4);
             ticker.scheduleAtFixedRate(() -> {
                 try {
-                    Message msg = driver.execute(
+                    Message msg = driver.executeNextId(
                             "DEV-ENDPOINT",
                             "TEST-VNID",
                             "Hello".getBytes(),
