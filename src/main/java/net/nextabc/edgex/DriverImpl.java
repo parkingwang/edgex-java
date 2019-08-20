@@ -221,12 +221,14 @@ final class DriverImpl implements Driver {
     public CompletableFuture<Message> call(Message message) {
         checkState();
         final long eventId = message.eventId();
+        final String executorNodeId = message.nodeId();
+        final String callerNodeId = this.nodeId;
         if (globals.isLogVerbose()) {
-            log.debug("MQ_RPC调用，RemoteNode: " + nodeId + ", SeqId: " + eventId);
+            log.debug("MQ_RPC调用，RemoteExecutorNodeId: " + executorNodeId + ", EventId: " + eventId);
         }
         try {
             mqttPublishMessage(
-                    Topics.formatRequestSend(nodeId, this.nodeId),
+                    Topics.formatRequestSend(executorNodeId, callerNodeId),
                     message,
                     this.globals.getMqttQoS(),
                     false
@@ -240,7 +242,7 @@ final class DriverImpl implements Driver {
                             eventId
                     ));
         }
-        final String topic = Topics.formatRepliesFilter(nodeId, this.nodeId);
+        final String topic = Topics.formatRepliesFilter(executorNodeId, callerNodeId);
         return this.router.register(topic, msg -> eventId == msg.eventId());
     }
 
