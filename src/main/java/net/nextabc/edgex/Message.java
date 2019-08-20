@@ -77,7 +77,7 @@ public interface Message {
         public final byte controlVar;
         public final long eventId;
 
-        public Header(byte magic, byte version, byte controlVar, long eventId) {
+        Header(byte magic, byte version, byte controlVar, long eventId) {
             this.magic = magic;
             this.version = version;
             this.controlVar = controlVar;
@@ -169,15 +169,14 @@ public interface Message {
     ////
 
     static String[] splitUnionId(String unionId) {
-        // TODO Test me
-        final String[] _unionId = new String[4];
-        final String[] uid = unionId.split(":");
+        final String[] id = new String[]{"", "", "", ""};
+        final String[] _id = unionId.split(":");
         for (int i = 0; i < 4; i++) {
-            if (i < uid.length) {
-                _unionId[i] = uid[i];
+            if (i < _id.length) {
+                id[i] = _id[i];
             }
         }
-        return _unionId;
+        return id;
     }
 
     static String makeUnionId(String nodeId, String groupId, String majorId, String minorId) {
