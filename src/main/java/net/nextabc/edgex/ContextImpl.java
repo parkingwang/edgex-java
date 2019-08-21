@@ -2,6 +2,7 @@ package net.nextabc.edgex;
 
 import com.moandjiezana.toml.Toml;
 import lombok.extern.log4j.Log4j;
+import net.nextabc.edgex.extra.VirtualNodeState;
 import net.nextabc.edgex.internal.SnowflakeId;
 import net.nextabc.kit.HashMap;
 import net.nextabc.kit.ImmutableMap;

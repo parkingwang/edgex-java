@@ -2,6 +2,7 @@ package net.nextabc.edgex;
 
 import lombok.Builder;
 import lombok.Data;
+import net.nextabc.edgex.extra.VirtualNodeProperties;
 
 import java.util.List;
 

@@ -1,6 +1,7 @@
 package net.nextabc.edgex;
 
 import lombok.extern.log4j.Log4j;
+import net.nextabc.edgex.extra.VirtualNodeState;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 
 /**
