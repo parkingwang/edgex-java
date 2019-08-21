@@ -1,4 +1,4 @@
-package net.nextabc.edgex.extra;
+package net.nextabc.edgex.internal;
 
 import com.google.gson.annotations.SerializedName;
 import lombok.Builder;
@@ -8,6 +8,7 @@ import java.util.Map;
 
 /**
  * 虚拟节点属性数据实体
+ *
  * @author 陈永佳 (yoojiachen@gmail.com)
  * @version 0.0.1
  */
@@ -18,14 +19,17 @@ public class VirtualNodeProperties {
     @SerializedName("unionId")
     private final String unionId;
 
-    @SerializedName("groupId")
-    private final String groupId;
+    @SerializedName("boardId")
+    private final String boardId;
 
     @SerializedName("majorId")
     private final String majorId;
 
     @SerializedName("minorId")
     private final String minorId;
+
+    @SerializedName("deviceType")
+    private final String deviceType;
 
     @SerializedName("description")
     private final String description;
@@ -39,13 +43,14 @@ public class VirtualNodeProperties {
     @SerializedName("attrs")
     private final Map<String, String> attrs;
 
-    public VirtualNodeProperties(String unionId, String groupId, String majorId, String minorId,
+    public VirtualNodeProperties(String unionId, String boardId, String majorId, String minorId, String deviceType,
                                  String description, boolean virtual,
                                  Map<String, String> stateCommands, Map<String, String> attrs) {
         this.unionId = unionId;
-        this.groupId = groupId;
+        this.boardId = boardId;
         this.majorId = majorId;
         this.minorId = minorId;
+        this.deviceType = deviceType;
         this.description = description;
         this.virtual = virtual;
         this.stateCommands = stateCommands;

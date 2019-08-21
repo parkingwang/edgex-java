@@ -2,7 +2,6 @@ package net.nextabc.edgex;
 
 import com.moandjiezana.toml.Toml;
 import lombok.extern.log4j.Log4j;
-import net.nextabc.edgex.extra.VirtualNodeState;
 import net.nextabc.edgex.internal.SnowflakeId;
 import net.nextabc.kit.HashMap;
 import net.nextabc.kit.ImmutableMap;
@@ -101,13 +100,7 @@ final class ContextImpl implements Context {
         }
         log.info("Mqtt客户端连接Broker: " + globals.getMqttBroker());
         final MqttConnectOptions opts = new MqttConnectOptions();
-        opts.setWill(Topics.formatStates(nodeId),
-                Mqtt.createStateMessage(VirtualNodeState.builder()
-                        .nodeId(nodeId)
-                        .groupId(nodeId)
-                        .majorId(nodeId)
-                        .state("OFFLINE")
-                        .build()).bytes(), 0, true);
+        opts.setWill(Topics.formatStates(nodeId), "OFFLINE".getBytes(), 0, true);
         Mqtt.setup(this.globals, opts);
         for (int i = 0; i < globals.getMqttMaxRetry(); i++) {
             try {

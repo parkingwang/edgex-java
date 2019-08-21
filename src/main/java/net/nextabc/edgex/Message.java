@@ -40,9 +40,9 @@ public interface Message {
     String nodeId();
 
     /**
-     * @return 返回GroupId
+     * @return 返回BoardId
      */
-    String groupId();
+    String boardId();
 
     /**
      * @return 返回MajorId
@@ -145,7 +145,7 @@ public interface Message {
         }
 
         @Override
-        public String groupId() {
+        public String boardId() {
             return _unionId[1];
         }
 
@@ -179,11 +179,11 @@ public interface Message {
         return id;
     }
 
-    static String makeUnionId(String nodeId, String groupId, String majorId, String minorId) {
+    static String makeUnionId(String nodeId, String boardId, String majorId, String minorId) {
         Texts.required(nodeId, "NodeId是必须的参数");
-        Texts.required(groupId, "GroupId是必须的参数");
+        Texts.required(boardId, "BoardId是必须的参数");
         Texts.required(majorId, "MajorId是必须的参数");
-        return nodeId + ":" + groupId + ":" + majorId + ":" + (minorId == null ? "" : minorId);
+        return nodeId + ":" + boardId + ":" + majorId + ":" + (minorId == null ? "" : minorId);
     }
 
     /**
@@ -205,16 +205,16 @@ public interface Message {
      * 根据字节数据，创建Message对象
      *
      * @param nodeId  Node Id
-     * @param groupId Virtual Id
+     * @param boardId Board Id
      * @param body    body
      * @param eventId EventID
      * @return Message
      */
-    static Message newMessage(String nodeId, String groupId, String majorId, String minorId, byte[] body, long eventId) {
+    static Message newMessage(String nodeId, String boardId, String majorId, String minorId, byte[] body, long eventId) {
         return new message(
                 new Header(FrameMagic, FrameVersion, FrameVarData, eventId),
-                makeUnionId(nodeId, groupId, majorId, minorId),
-                new String[]{nodeId, groupId, majorId, minorId},
+                makeUnionId(nodeId, boardId, majorId, minorId),
+                new String[]{nodeId, boardId, majorId, minorId},
                 body);
     }
 

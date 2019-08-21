@@ -207,9 +207,9 @@ final class DriverImpl implements Driver {
     }
 
     @Override
-    public Message execute(String nodeId, String groupId, String majorId, String minorId,
+    public Message execute(String nodeId, String boardId, String majorId, String minorId,
                            byte[] body, long eventId, int timeoutSec) throws Exception {
-        return call(nodeId, groupId, majorId, minorId, body, eventId).get(timeoutSec, TimeUnit.SECONDS);
+        return call(nodeId, boardId, majorId, minorId, body, eventId).get(timeoutSec, TimeUnit.SECONDS);
     }
 
     @Override
@@ -247,8 +247,8 @@ final class DriverImpl implements Driver {
     }
 
     @Override
-    public CompletableFuture<Message> call(String nodeId, String groupId, String majorId, String minorId, byte[] body, long eventId) {
-        return call(Message.newMessage(nodeId, groupId, majorId, minorId, body, eventId));
+    public CompletableFuture<Message> call(String nodeId, String boardId, String majorId, String minorId, byte[] body, long eventId) {
+        return call(Message.newMessage(nodeId, boardId, majorId, minorId, body, eventId));
     }
 
     private void mqttPublishMessage(String mqttTopic, Message msg, int qos, boolean retained) throws MqttException {

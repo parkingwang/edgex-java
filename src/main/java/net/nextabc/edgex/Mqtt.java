@@ -1,7 +1,6 @@
 package net.nextabc.edgex;
 
 import lombok.extern.log4j.Log4j;
-import net.nextabc.edgex.extra.VirtualNodeState;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 
 /**
@@ -25,25 +24,4 @@ class Mqtt {
         }
     }
 
-    static Message createStateMessage(VirtualNodeState state) {
-        final String nodeId = state.getNodeId();
-        if (null != state.getUnionId()) {
-            log.debug("使用虚拟使用自定义Uuid：" + state.getUnionId());
-        } else {
-            state = VirtualNodeState.builder()
-                    .groupId(state.getGroupId())
-                    .state(state.getState())
-                    .nodeId(state.getNodeId())
-                    .majorId(state.getMajorId())
-                    .minorId(state.getMinorId())
-                    .unionId(Message.makeUnionId(nodeId, state.getGroupId(), state.getMajorId(), state.getMinorId()))
-                    .values(state.getValues())
-                    .build();
-        }
-        return Message.newMessageByUnionId(
-                state.getUnionId(),
-                Codec.toJSON(state).getBytes(),
-                0
-        );
-    }
 }

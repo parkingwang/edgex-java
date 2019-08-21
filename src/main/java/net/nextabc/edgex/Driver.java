@@ -74,7 +74,7 @@ public interface Driver extends LifeCycle, NodeId {
     /**
      * 发起一个同步调用消息请求，并获取响应消息。
      */
-    Message execute(String nodeId, String groupId, String majorId, String minorId, byte[] body,
+    Message execute(String nodeId, String boardId, String majorId, String minorId, byte[] body,
                     long eventId, int timeoutSec) throws Exception;
 
     /**
@@ -85,7 +85,7 @@ public interface Driver extends LifeCycle, NodeId {
     /**
      * 发起一个异步请求，返回CompletableFuture对象
      */
-    CompletableFuture<Message> call(String nodeId, String groupId, String majorId, String minorId, byte[] body, long eventId);
+    CompletableFuture<Message> call(String nodeId, String boardId, String majorId, String minorId, byte[] body, long eventId);
 
     /**
      * 发起一个异步请求，返回CompletableFuture对象

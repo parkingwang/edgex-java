@@ -1,8 +1,8 @@
-package net.nextabc.edgex;
+package net.nextabc.edgex.internal;
 
+import com.google.gson.annotations.SerializedName;
 import lombok.Builder;
 import lombok.Data;
-import net.nextabc.edgex.extra.VirtualNodeProperties;
 
 import java.util.List;
 
@@ -14,12 +14,25 @@ import java.util.List;
 @Builder
 public class MainNodeProperties {
 
+    @SerializedName("hostOS")
     private final String hostOS;
+
+    @SerializedName("hostArch")
     private final String hostArch;
+
+    @SerializedName("nodeType")
     private final String nodeType;
+
+    @SerializedName("nodeId")
     private final String nodeId;
+
+    @SerializedName("vendor")
     private final String vendor;
+
+    @SerializedName("connDriver")
     private final String connDriver;
+
+    @SerializedName("nodes")
     private List<VirtualNodeProperties> nodes;
 
     public MainNodeProperties(String hostOS, String hostArch, String nodeType, String nodeId,

@@ -1,4 +1,4 @@
-package net.nextabc.edgex.extra;
+package net.nextabc.edgex.internal;
 
 import com.google.gson.annotations.SerializedName;
 import lombok.Builder;
@@ -21,8 +21,8 @@ public class VirtualNodeState {
     @SerializedName("nodeId")
     private final String nodeId;
 
-    @SerializedName("groupId")
-    private final String groupId;
+    @SerializedName("boardId")
+    private final String boardId;
 
     @SerializedName("majorId")
     private final String majorId;
@@ -36,11 +36,11 @@ public class VirtualNodeState {
     @SerializedName("values")
     private final Map<String, Object> values;
 
-    public VirtualNodeState(String unionId, String nodeId, String groupId, String majorId, String minorId,
+    public VirtualNodeState(String unionId, String nodeId, String boardId, String majorId, String minorId,
                             String state, Map<String, Object> values) {
         this.unionId = unionId;
         this.nodeId = nodeId;
-        this.groupId = groupId;
+        this.boardId = boardId;
         this.majorId = majorId;
         this.minorId = minorId;
         this.state = state;
