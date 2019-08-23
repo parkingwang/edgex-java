@@ -1,6 +1,5 @@
 package net.nextabc.edgex;
 
-import net.nextabc.edgex.internal.RPCMessageRouter;
 import net.nextabc.edgex.internal.SnowflakeId;
 import org.apache.log4j.Logger;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
@@ -9,6 +8,8 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -26,7 +27,9 @@ final class DriverImpl implements Driver {
 
     private final List<OnStartupListener<Driver>> startupListeners = new ArrayList<>(0);
     private final List<OnShutdownListener<Driver>> shutdownListeners = new ArrayList<>(0);
-    private final RPCMessageRouter rpcRouter = new RPCMessageRouter();
+
+    private final IncomeWrapper income = new IncomeWrapper();
+    private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
     private final MqttClient mqttClientRef;
     private final String nodeId;
@@ -44,7 +47,6 @@ final class DriverImpl implements Driver {
         this.mqttClientRef = mqttClient;
         this.globals = Objects.requireNonNull(globals);
         this.eventIdRef = snowflakeId;
-
         this.statisticsTimer = new Timer("DriverStatisticsTimer");
         this.statisticsMqttTopic = Topics.formatStatistics(nodeId);
         this.options = options;
@@ -98,8 +100,8 @@ final class DriverImpl implements Driver {
     }
 
     @Override
-    public Message newMessage(String groupId, String majorId, String minorId, byte[] body, long eventId) {
-        return Message.newMessage(this.nodeId, groupId, majorId, minorId, body, eventId);
+    public Message newMessage(String boardId, String majorId, String minorId, byte[] body, long eventId) {
+        return Message.newMessage(this.nodeId, boardId, majorId, minorId, body, eventId);
     }
 
     @Override
@@ -132,28 +134,7 @@ final class DriverImpl implements Driver {
                 }
             };
             for (String topic : item.getValue()) {
-                final String mqttTopic;
-                switch (type) {
-                    default:
-                    case Custom:
-                        mqttTopic = topic;
-                        break;
-                    case Events:
-                        mqttTopic = Topics.formatEvents(topic);
-                        break;
-                    case Values:
-                        mqttTopic = Topics.formatValues(topic);
-                        break;
-                    case Actions:
-                        mqttTopic = Topics.formatActions(topic);
-                        break;
-                    case Properties:
-                        mqttTopic = Topics.formatProperties(topic);
-                        break;
-                    case Statistics:
-                        mqttTopic = Topics.formatStatistics(topic);
-                        break;
-                }
+                final String mqttTopic = makeTopic(type, topic);
                 log.debug("开启订阅事件: QOS= " + qos + ", Topic= " + mqttTopic);
                 this.subscribedTopics.add(mqttTopic);
                 try {
@@ -165,15 +146,18 @@ final class DriverImpl implements Driver {
         }
 
         // Async RPC监听
+        final IMqttMessageListener listener = (topic, mqtt) -> {
+            if (globals.isLogVerbose()) {
+                log.debug("接收到RPC响应事件：Topic= " + topic);
+            }
+            final Message msg = Message.parse(mqtt.getPayload());
+            synchronized (income) {
+                income.value = new Incoming(topic, msg);
+                income.notifyAll();
+            }
+        };
         try {
-            this.mqttClientRef.subscribe(
-                    Topics.formatRepliesListen(this.nodeId),
-                    (topic, msg) -> {
-                        if (globals.isLogVerbose()) {
-                            log.debug("接收到RPC响应事件：Topic= " + topic);
-                        }
-                        rpcRouter.route(topic, msg);
-                    });
+            this.mqttClientRef.subscribe(Topics.formatRepliesListen(this.nodeId), listener);
         } catch (MqttException e) {
             log.fatal("监听RPC事件出错：", e);
         }
@@ -208,6 +192,7 @@ final class DriverImpl implements Driver {
         this.statisticsTimer.cancel();
         this.statisticsTimer.purge();
         this.shutdownListeners.forEach(l -> l.onAfter(this));
+        this.executor.shutdown();
         this.stateStarted = false;
     }
 
@@ -232,23 +217,35 @@ final class DriverImpl implements Driver {
             log.debug("MQ_RPC调用，RemoteExecutorNodeId: " + executorNodeId + ", EventId: " + eventId);
         }
         try {
-            mqttPublishMessage(
-                    Topics.formatRequestSend(executorNodeId, callerNodeId),
+            mqttPublishMessage(Topics.formatRequestSend(executorNodeId, callerNodeId),
                     message,
                     this.globals.getMqttQoS(),
                     false
             );
         } catch (MqttException e) {
             log.error("MQ_RPC调用，发送MQTT消息出错", e);
-            return CompletableFuture.completedFuture(
-                    Message.newMessageByUnionId(
-                            message.unionId(),
-                            ("MQ_RPC_MQTT_ERR:" + e.getMessage()).getBytes(),
-                            eventId
-                    ));
+            return CompletableFuture.completedFuture(Message.newMessageByUnionId(message.unionId(),
+                    ("MQ_RPC_MQTT_ERR:" + e.getMessage()).getBytes(),
+                    eventId));
         }
         final String topic = Topics.formatRepliesFilter(executorNodeId, callerNodeId);
-        return this.rpcRouter.register(topic, msg -> eventId == msg.eventId());
+        return CompletableFuture.supplyAsync(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                Incoming recv;
+                synchronized (income) {
+                    try {
+                        income.wait();
+                        recv = income.value;
+                    } catch (InterruptedException e) {
+                        return null;
+                    }
+                }
+                if (topic.equals(recv.topic) && eventId == recv.message.eventId()) {
+                    return recv.message;
+                }
+            }
+            return null;
+        }, executor);
     }
 
     @Override
@@ -270,6 +267,41 @@ final class DriverImpl implements Driver {
         if (!this.stateStarted) {
             log.fatal("Driver未启动，须调用startup()/shutdown()");
         }
+    }
+
+    private String makeTopic(TopicType type, String topic) {
+        switch (type) {
+            default:
+            case Custom:
+                return topic;
+            case Events:
+                return Topics.formatEvents(topic);
+            case Values:
+                return Topics.formatValues(topic);
+            case Actions:
+                return Topics.formatActions(topic);
+            case Properties:
+                return Topics.formatProperties(topic);
+            case Statistics:
+                return Topics.formatStatistics(topic);
+        }
+    }
+
+    ////
+
+    private static class Incoming {
+
+        final String topic;
+        final Message message;
+
+        private Incoming(String topic, Message message) {
+            this.topic = topic;
+            this.message = message;
+        }
+    }
+
+    private static class IncomeWrapper {
+        private Incoming value;
     }
 
     ////
