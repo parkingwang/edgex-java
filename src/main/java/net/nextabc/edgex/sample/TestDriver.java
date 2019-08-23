@@ -28,18 +28,17 @@ public class TestDriver {
                 try {
                     Message msg = driver.execute(
                             "DEV-ENDPOINT",
-                            "TEST-VNID",
-                            "Test",
+                            "main",
+                            "main",
                             "",
                             "Hello".getBytes(),
                             driver.generateEventId(),
-                            5);
+                            3);
                     System.out.println("########## Exec响应：" + new String(msg.body()));
                 } catch (Exception e) {
                     log.error("Exec调用出错: " + e);
                 }
-                System.out.println("\n\n");
-            }, 1, 1, TimeUnit.SECONDS);
+            }, 1, 3, TimeUnit.SECONDS);
 
             try {
                 driver.startup();
