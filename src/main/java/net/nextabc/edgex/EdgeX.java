@@ -43,10 +43,13 @@ public class EdgeX {
 
     public static Globals createDefaultGlobals() {
         return Globals.builder()
+                .nodeDataCenterId(Env.getInt(EnvKeyDataCenterId, 0))
+                .nodeWorkerId(Env.getInt(EnvKeyWorkerId, 0))
+                .logVerbose(Env.getBoolean(EnvKeyLogVerbose, false))
                 .mqttBroker(Env.getString(EnvKeyMQBroker, Context.MqttBrokerDefault))
                 .mqttUsername(Env.getString(EnvKeyMQUsername, null))
                 .mqttPassword(Env.getString(EnvKeyMQPassword, null))
-                .mqttQoS(Env.getInt(EnvKeyMQQOS, 0))
+                .mqttQoS(Env.getInt(EnvKeyMQQoS, 0))
                 .mqttRetained(Env.getBoolean(EnvKeyMQRetained, false))
                 .mqttClearSession(Env.getBoolean(EnvKeyMQCleanSession, true))
                 .mqttAutoReconnect(true)

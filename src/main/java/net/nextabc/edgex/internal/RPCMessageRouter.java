@@ -1,5 +1,6 @@
 package net.nextabc.edgex.internal;
 
+import lombok.extern.slf4j.Slf4j;
 import net.nextabc.edgex.Message;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
@@ -13,7 +14,8 @@ import java.util.function.Predicate;
 /**
  * @author 陈哈哈 (yoojiachen@gmail.com)
  */
-public class MessageRouter {
+@Slf4j
+public class RPCMessageRouter {
 
     private static final int MAX_MISSED = 10;
 
@@ -22,10 +24,11 @@ public class MessageRouter {
     public void route(String topic, MqttMessage mqtt) {
         final List<Registry> list = registries.get(topic);
         if (list == null) {
-            return;
+            log.debug("接收到RPC响应事件，缺失处理对象。Topic= " + topic);
+        } else {
+            final Message msg = Message.parse(mqtt.getPayload());
+            list.removeIf(r -> r.invoke(msg));
         }
-        final Message msg = Message.parse(mqtt.getPayload());
-        list.removeIf(r -> r.invoke(msg));
     }
 
     public CompletableFuture<Message> register(String topic, Predicate<Message> predicate) {

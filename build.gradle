@@ -25,7 +25,7 @@ repositories {
 
 
 group 'net.nextabc'
-version '1.10.0'
+version '1.10.1'
 description = 'Edge X for java'
 
 sourceCompatibility = 1.8

@@ -1,6 +1,6 @@
 package net.nextabc.edgex;
 
-import net.nextabc.edgex.internal.MessageRouter;
+import net.nextabc.edgex.internal.RPCMessageRouter;
 import net.nextabc.edgex.internal.SnowflakeId;
 import org.apache.log4j.Logger;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
@@ -26,7 +26,7 @@ final class DriverImpl implements Driver {
 
     private final List<OnStartupListener<Driver>> startupListeners = new ArrayList<>(0);
     private final List<OnShutdownListener<Driver>> shutdownListeners = new ArrayList<>(0);
-    private final MessageRouter router = new MessageRouter();
+    private final RPCMessageRouter rpcRouter = new RPCMessageRouter();
 
     private final MqttClient mqttClientRef;
     private final String nodeId;
@@ -168,7 +168,12 @@ final class DriverImpl implements Driver {
         try {
             this.mqttClientRef.subscribe(
                     Topics.formatRepliesListen(this.nodeId),
-                    router::route);
+                    (topic, msg) -> {
+                        if (globals.isLogVerbose()) {
+                            log.debug("接收到RPC响应事件：Topic= " + topic);
+                        }
+                        rpcRouter.route(topic, msg);
+                    });
         } catch (MqttException e) {
             log.fatal("监听RPC事件出错：", e);
         }
@@ -184,7 +189,7 @@ final class DriverImpl implements Driver {
                     log.debug("定时上报Stats消息，MQTT发送错误：", e);
                 }
             }
-        }, 3000, 1000 * 10);
+        }, 60 * 1000, 1000 * 60);
 
         this.startupListeners.forEach(l -> l.onAfter(this));
     }
@@ -243,7 +248,7 @@ final class DriverImpl implements Driver {
                     ));
         }
         final String topic = Topics.formatRepliesFilter(executorNodeId, callerNodeId);
-        return this.router.register(topic, msg -> eventId == msg.eventId());
+        return this.rpcRouter.register(topic, msg -> eventId == msg.eventId());
     }
 
     @Override

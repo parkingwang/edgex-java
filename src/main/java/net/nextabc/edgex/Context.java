@@ -15,10 +15,13 @@ public interface Context extends NodeId {
     String EnvKeyMQBroker = "EDGEX_MQTT_BROKER";
     String EnvKeyMQUsername = "EDGEX_MQTT_USERNAME";
     String EnvKeyMQPassword = "EDGEX_MQTT_PASSWORD";
-    String EnvKeyMQQOS = "EDGEX_MQTT_QOS";
+    String EnvKeyMQQoS = "EDGEX_MQTT_QOS";
     String EnvKeyMQRetained = "EDGEX_MQTT_RETAINED";
     String EnvKeyMQCleanSession = "EDGEX_MQTT_CLEAN_SESSION";
     String EnvKeyConfig = "EDGEX_CONFIG";
+    String EnvKeyLogVerbose = "EDGEX_LOG_VERBOSE";
+    String EnvKeyDataCenterId = "EDGEX_DATACENTER_ID";
+    String EnvKeyWorkerId = "EDGEX_WORKER_ID";
 
     String MqttBrokerDefault = "tcp://mqtt-broker.edgex.io:1883";
 
