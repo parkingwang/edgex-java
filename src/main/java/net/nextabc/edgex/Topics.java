@@ -9,7 +9,7 @@ import lombok.extern.log4j.Log4j;
 @Log4j
 final public class Topics {
 
-    private static final String prefixRoot = "$EdgeX/";
+    private static final String prefixRoot = "edge-x/";
     private static final String prefixProperties = prefixRoot + "properties/";
     private static final String prefixEvents = prefixRoot + "events/";
     private static final String prefixValues = prefixRoot + "values/";

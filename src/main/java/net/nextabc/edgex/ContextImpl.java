@@ -13,6 +13,7 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import java.io.File;
 import java.util.Collections;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Stream;
 
@@ -91,7 +92,12 @@ final class ContextImpl implements Context {
             }
         }
 
-        final String clientId = "EXNode:" + nodeId;
+        final String clientId;
+        if (g.getBoolean("MqttRandomClientId", false)) {
+            clientId = "EXNode:" + nodeId + ":" + UUID.randomUUID().toString();
+        } else {
+            clientId = "EXNode:" + nodeId;
+        }
         final MemoryPersistence mp = new MemoryPersistence();
         try {
             this.mqttClient = new MqttClient(this.globals.getMqttBroker(), clientId, mp);
